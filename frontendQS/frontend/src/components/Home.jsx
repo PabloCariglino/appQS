@@ -1,16 +1,10 @@
 import React from "react";
-import { Link } from "react-router-dom";
 
 const Home = () => {
   return (
     <div>
       <header>
         <h1>Bienvenidos a Nuestra Empresa</h1>
-        <nav>
-          <Link to="/login">
-            <button>Login</button>
-          </Link>
-        </nav>
       </header>
       <main>
         <section>
