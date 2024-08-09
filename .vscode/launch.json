@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-AppQuickSolutionsApplication<AppQuickSolutions>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.QS.AppQuickSolutions.AppQuickSolutionsApplication",
+      "projectName": "AppQuickSolutions",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
