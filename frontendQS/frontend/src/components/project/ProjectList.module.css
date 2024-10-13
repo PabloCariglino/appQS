@@ -1,0 +1,54 @@
+.tableContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.createProjectButtonContainer {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.createButton {
+  background-color: #007bff;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.createButton:hover {
+  background-color: #0056b3;
+}
+
+.projectTable {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 20px;
+}
+
+.projectTable th,
+.projectTable td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.projectTable tr:hover {
+  background-color: #f1f1f1;
+  cursor: pointer;
+}
+
+.projectTable th {
+  background-color: #343a40;
+  color: white;
+}
+
+.projectTable td {
+  background-color: white;
+}
