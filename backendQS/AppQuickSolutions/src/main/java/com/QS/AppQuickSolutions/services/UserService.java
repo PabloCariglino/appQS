@@ -1,6 +1,7 @@
 package com.QS.AppQuickSolutions.services;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -21,13 +22,19 @@ public class UserService {
     @Autowired
     private EmailService emailService;
 
-     @Autowired
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     // @Autowired
     // private BCryptPasswordEncoder passwordEncoder;
 
     public User registerUser(UserDto userDto) {
+
+       // Validar si el correo ya está en uso
+        if (userRepository.existsByEmail(userDto.getEmail())) {
+        throw new IllegalArgumentException("El correo electrónico ya está registrado.");
+        }
+
         // Crear un nuevo usuario
         User newUser = new User();
         newUser.setUserName(userDto.getUserName());
@@ -83,14 +90,14 @@ public class UserService {
     }
 
     // Buscar usuario por Email
-    public User findUserByEmail(String email) {
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-    }
-
-    // Buscar usuario por Email
-    // public Optional<User> findUserByEmail(String email) {
-    // return userRepository.findByEmail(email);
+    // public User findUserByEmail(String email) {
+    //     return userRepository.findByEmail(email)
+    //             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
     // }
+
+    //Buscar usuario por Email
+    public Optional<User> findUserByEmail(String email) {
+    return userRepository.findByEmail(email);
+    }
 
 }

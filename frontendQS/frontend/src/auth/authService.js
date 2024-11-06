@@ -1,29 +1,42 @@
-// authService.js
 import axios from "axios";
-import { jwtDecode } from "jwt-decode";
+import * as jwt_decode from "jwt-decode";
+
 const API_URL = "http://localhost:8080/api/auth";
 
 export const login = async (email, password) => {
   const response = await axios.post(`${API_URL}/login`, { email, password });
-  localStorage.setItem("token", response.data.token);
+
+  if (typeof window !== "undefined" && window.localStorage) {
+    localStorage.setItem("token", response.data.jwt); // Guarda el token solo si localStorage está disponible
+  }
+
   return response.data;
 };
 
 export const logout = () => {
-  localStorage.removeItem("token");
+  if (typeof window !== "undefined" && window.localStorage) {
+    localStorage.removeItem("token"); // Borra el token solo si localStorage está disponible
+  }
 };
 
 export const getRoleFromToken = () => {
+  if (typeof window === "undefined" || !window.localStorage) return null;
+
   const token = localStorage.getItem("token");
-  if (!token) return null; // No hay token
+  if (!token) return null;
+
   try {
-    const decodedToken = jwtDecode(token);
-    return decodedToken.role; // Suponiendo que el token tiene el campo `role`
+    const decodedToken = jwt_decode(token);
+    return decodedToken.role; // Asegúrate que el token incluye el campo `role`
   } catch {
-    return null; // Token inválido o expirado
+    return null;
   }
 };
 
 export const isAuthenticated = () => {
-  return !!localStorage.getItem("token");
+  return (
+    typeof window !== "undefined" &&
+    window.localStorage &&
+    !!localStorage.getItem("token")
+  );
 };

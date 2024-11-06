@@ -1,30 +1,30 @@
-import axios from "axios";
-import PropTypes from "prop-types";
+// PrivateRoute.jsx
+import PropTypes from "prop-types"; // Importamos PropTypes
+import React, { useContext } from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import { getRoleFromToken } from "./authService"; // Importación corregida
+import { AuthContext } from "./AuthContext";
 
-const PrivateRoute = ({ roles }) => {
-  const token = localStorage.getItem("token");
-  const userRole = getRoleFromToken();
+// Definimos el componente de ruta privada
+const PrivateRoute = ({ allowedRoles }) => {
+  const { role, isLoggedIn } = useContext(AuthContext);
 
-  // Configurar el token en los encabezados de axios si existe
-  if (token) {
-    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-  } else {
-    delete axios.defaults.headers.common["Authorization"];
+  // Si no está logueado, redirige al login
+  if (!isLoggedIn) {
+    return <Navigate to="/login" replace />;
   }
 
-  // Comprobar si el usuario tiene acceso a la ruta
-  if (token && roles.includes(userRole)) {
-    return <Outlet />; // Renderiza los hijos si el acceso es permitido
-  } else {
-    return <Navigate to="/login" replace />; // Redirige si no tiene acceso
+  // Si el rol no está permitido, redirige a una página no autorizada
+  if (!allowedRoles.includes(role)) {
+    return <Navigate to="/unauthorized" replace />;
   }
+
+  // Si pasa todas las validaciones, renderiza la ruta solicitada
+  return <Outlet />;
 };
 
-// Validación de las props
+// Definimos las prop-types para validar las props
 PrivateRoute.propTypes = {
-  roles: PropTypes.arrayOf(PropTypes.string).isRequired,
+  allowedRoles: PropTypes.arrayOf(PropTypes.string).isRequired, // allowedRoles debe ser un array de strings y obligatorio
 };
 
 export default PrivateRoute;

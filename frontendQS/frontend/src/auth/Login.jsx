@@ -1,36 +1,34 @@
+// Login.jsx
 import axios from "axios";
 import React, { useState } from "react";
 import { Alert, Button, Container, Form } from "react-bootstrap";
-import { useNavigate } from "react-router-dom"; // Hook para manejar la navegación
+import { useNavigate } from "react-router-dom";
 import styles from "./Login.module.css";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const navigate = useNavigate(); // Sustituye history por navigate
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const response = await axios.post(
         "http://localhost:8080/api/auth/login",
-        {
-          email,
-          password,
-        }
+        { email, password }
       );
 
-      localStorage.setItem("token", response.data.jwt); // Asegúrate que el token se llama `jwt`
+      localStorage.setItem("token", response.data.jwt);
 
-      // Redirige al dashboard adecuado según el rol del usuario
-      if (response.data.role === "ADMIN") {
-        navigate("/admin-dashboard"); // Utiliza navigate en lugar de history.push
-      } else {
+      const role = response.data.role;
+      if (role === "ADMIN") {
+        navigate("/admin-dashboard");
+      } else if (role === "OPERATOR") {
         navigate("/operator-dashboard");
       }
     } catch (err) {
-      setError("Invalid email or password"); // Cambiado para mayor claridad
+      setError("Invalid email or password");
     }
   };
 
@@ -42,7 +40,7 @@ const Login = () => {
         <Form.Group controlId="formEmail">
           <Form.Label>Email</Form.Label>
           <Form.Control
-            type="email" // Cambiado a email
+            type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

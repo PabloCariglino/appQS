@@ -1,118 +1,102 @@
+import { useAuth0 } from "@auth0/auth0-react";
+import axios from "axios";
 import React, { useState } from "react";
-import { Button, Container, Form } from "react-bootstrap";
-import UserService from "../../services/UserService";
-import styles from "./RegisterUser.module.css"; // Importamos el CSS module
+import { useNavigate } from "react-router-dom";
 
-// Enum de roles como constante
-const ROLES = {
-  ADMIN: "ADMIN",
-  OPERATOR: "OPERATOR",
-};
+const RegisterUser = () => {
+  const { getAccessTokenSilently } = useAuth0(); // Auth0 hook para obtener el token de acceso
+  const navigate = useNavigate();
 
-const RegisterUserForm = () => {
   const [formData, setFormData] = useState({
-    userName: "",
     email: "",
     password: "",
-    rol: ROLES.OPERATOR, // Valor por defecto OPERATOR
+    role: "OPERATOR", // Valor predeterminado, pero se puede seleccionar otro
   });
-  const [error, setError] = useState(null); // Estado para manejar errores
-  const [successMessage, setSuccessMessage] = useState(null); // Mensaje de éxito
 
-  // Maneja el cambio de los inputs
+  const [error, setError] = useState("");
+
+  // Maneja el cambio en los inputs del formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-    setError(null); // Resetea el error en cada cambio
-    setSuccessMessage(null); // Resetea el mensaje de éxito
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
   };
 
-  // Maneja el envío del formulario
+  // Enviar datos del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     try {
-      const savedUser = await UserService.registerUser(formData);
-      setSuccessMessage(`Usuario registrado: ${savedUser.userName}`);
-      setFormData({
-        userName: "",
-        email: "",
-        password: "",
-        rol: ROLES.OPERATOR,
-      }); // Resetea el formulario
+      const token = await getAccessTokenSilently(); // Obtener token de acceso
+
+      // Llamada al backend para registrar al usuario
+      await axios.post(
+        "http://localhost:8080/api/user-dashboard/register-user",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Pasar el token al backend
+          },
+        }
+      );
+
+      navigate("/admin-dashboard"); // Redirige al dashboard después del registro
     } catch (error) {
-      setError(error); // Maneja el error
-      console.error("Error registrando el usuario:", error);
+      console.error("Error al registrar usuario:", error);
+      setError("No se pudo registrar el usuario. Verifica los datos.");
     }
   };
 
   return (
-    <Container className={styles.formContainer}>
-      <Form onSubmit={handleSubmit} className={styles.form}>
-        <h2 className="text-center mb-4">Registro de Usuario</h2>
-
-        {error && (
-          <div className="alert alert-danger" role="alert">
-            Error registrando el usuario: {error.message}
-          </div>
-        )}
-        {successMessage && (
-          <div className="alert alert-success" role="alert">
-            {successMessage}
-          </div>
-        )}
-
-        <Form.Group controlId="formUserName">
-          <Form.Label>Nombre de Usuario</Form.Label>
-          <Form.Control
-            type="text"
-            name="userName"
-            value={formData.userName}
-            onChange={handleChange}
-            required
-          />
-        </Form.Group>
-
-        <Form.Group controlId="formEmail">
-          <Form.Label>Email</Form.Label>
-          <Form.Control
+    <div className="container mt-5">
+      <h2>Registrar Usuario</h2>
+      {error && <div className="alert alert-danger">{error}</div>}
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>Email</label>
+          <input
             type="email"
             name="email"
+            className="form-control"
             value={formData.email}
             onChange={handleChange}
             required
           />
-        </Form.Group>
+        </div>
 
-        <Form.Group controlId="formPassword">
-          <Form.Label>Contraseña</Form.Label>
-          <Form.Control
+        <div className="form-group mt-3">
+          <label>Password</label>
+          <input
             type="password"
             name="password"
+            className="form-control"
             value={formData.password}
             onChange={handleChange}
             required
           />
-        </Form.Group>
+        </div>
 
-        <Form.Group controlId="formRol">
-          <Form.Label>Rol</Form.Label>
-          <Form.Control
-            as="select"
-            name="rol"
-            value={formData.rol}
+        <div className="form-group mt-3">
+          <label>Rol</label>
+          <select
+            name="role"
+            className="form-control"
+            value={formData.role}
             onChange={handleChange}
           >
-            <option value={ROLES.ADMIN}>Administrador</option>
-            <option value={ROLES.OPERATOR}>Operador</option>
-          </Form.Control>
-        </Form.Group>
+            <option value="OPERATOR">Operator</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
 
-        <Button variant="primary" type="submit" className={styles.submitButton}>
-          Registrar Usuario
-        </Button>
-      </Form>
-    </Container>
+        <button type="submit" className="btn btn-primary mt-4">
+          Registrar
+        </button>
+      </form>
+    </div>
   );
 };
 
-export default RegisterUserForm;
+export default RegisterUser;

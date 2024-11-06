@@ -17,6 +17,8 @@ public interface UserRepository extends JpaRepository<User , Long> {
 
    List<User> findByRole(Role role);
 
+   boolean existsByEmail(String email);
+
    //buscar por email de usuario
    //@Query("SELECT u FROM Usuario u WHERE u.email = :email")
    //public Usuario buscarPorEmail(@Param("email") String email);

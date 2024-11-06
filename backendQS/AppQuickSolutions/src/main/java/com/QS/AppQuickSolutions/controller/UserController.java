@@ -1,10 +1,12 @@
 package com.QS.AppQuickSolutions.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.QS.AppQuickSolutions.dto.UserDto;
@@ -31,8 +34,12 @@ public class UserController {
     @PostMapping("/register-user")
     @PreAuthorize("hasRole('ADMIN')") // Verifica que el usuario tenga el rol ADMIN
     public ResponseEntity<User> createUser(@Valid @RequestBody UserDto userDto) {
-        User savedUser = userService.registerUser(userDto);
-        return ResponseEntity.ok(savedUser);
+        try {
+            User savedUser = userService.registerUser(userDto);
+            return ResponseEntity.ok(savedUser);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 
     @PutMapping("/update-user/{id}")
@@ -69,11 +76,22 @@ public class UserController {
     // Buscar usuario por email
     @GetMapping("/find-user-by-email/{email}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')") // Ambos roles pueden buscar
-    public ResponseEntity<User> findUserByEmail(@PathVariable String email) {
-        User user = userService.findUserByEmail(email);
+    public ResponseEntity<Optional<User>> findUserByEmail(@PathVariable String email) {
+        Optional<User> user = userService.findUserByEmail(email);
         return ResponseEntity.ok(user);
     }
 
 
-
+    //devuelve el rol al logear
+    @GetMapping("/users/role")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('OPERATOR')") // Ambos roles pueden buscar
+    public ResponseEntity<String> getUserRole(@RequestParam String email) {
+        User user = userService.findUserByEmail(email)
+                     .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
+        return ResponseEntity.ok(user.getRole().name()); // Retorna el rol como String
+    }
+    
 }
+
+
+
