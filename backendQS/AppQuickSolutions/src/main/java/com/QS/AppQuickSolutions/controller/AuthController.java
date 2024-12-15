@@ -1,57 +1,51 @@
 package com.QS.AppQuickSolutions.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.QS.AppQuickSolutions.dto.LoginDto;
+import com.QS.AppQuickSolutions.dto.LoginRequest;
 import com.QS.AppQuickSolutions.dto.LoginResponse;
-import com.QS.AppQuickSolutions.entity.User;
-import com.QS.AppQuickSolutions.services.UserService;
+import com.QS.AppQuickSolutions.security.AuthService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthService authService;
 
-    @Autowired
-    private com.QS.AppQuickSolutions.security.jwt.JwtTokenProvider tokenProvider;
-
-    @Autowired
-    private UserService userService;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginDto loginDto) {
-    try {
-        Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(loginDto.getEmail(), loginDto.getPassword())
-        );
+    public ResponseEntity<LoginResponse> authenticateUser(@RequestBody LoginRequest loginRequest) {
+        System.out.println("Login attempt with email: " + loginRequest.getEmail());
+        try {
+            String jwt = authService.authenticateUser(loginRequest.getEmail(), loginRequest.getPassword());
+            System.out.println("Login successful for email: " + loginRequest.getEmail());
+            return ResponseEntity.ok(new LoginResponse(jwt));
+        } catch (Exception e) {
+            System.out.println("Login failed for email: " + loginRequest.getEmail() + " - Error: " + e.getMessage());
+            return ResponseEntity.status(401).body(new LoginResponse(null));
+        }
+    }
 
-        // Generar el token JWT
-        String jwt = tokenProvider.generateToken(authentication);
-
-        // Obtener el usuario autenticado
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        User user = userService.findUserByEmail(userDetails.getUsername());
-
-        return ResponseEntity.ok(new LoginResponse(jwt, user.getRole()));
-    } catch (BadCredentialsException e) {
-        return ResponseEntity.badRequest().body("Invalid email or password"); // Mensaje específico
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred: " + e.getMessage());
+    @PostMapping("/logout")
+    public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+        if (authentication != null) {
+            System.out.println("Logout attempt by user: " + authentication.getName());
+            new SecurityContextLogoutHandler().logout(request, response, authentication);
+            System.out.println("Logout successful for user: " + authentication.getName());
+        } else {
+            System.out.println("Logout attempt with no active authentication");
+        }
     }
 }
-
-}
-

@@ -1,16 +1,16 @@
 package com.QS.AppQuickSolutions.security.jwt;
 
 import java.util.Date;
+import java.util.stream.Collectors;
 
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import com.QS.AppQuickSolutions.security.SecurityUtils;
-
-import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -19,66 +19,62 @@ import jakarta.servlet.http.HttpServletRequest;
 @Component
 public class JwtTokenProvider {
 
-    @Value("${app.jwtSecret}") // Asegúrate de definir esta propiedad en application.properties
-    private String jwtSecret;
+    private final SecretKey jwtSecret;
+    private final long jwtExpiration;
 
-    @Value("${app.jwtExpirationMs}") // Asegúrate de definir esta propiedad en application.properties
-    private int jwtExpirationMs;
+    public JwtTokenProvider(@Value("${app.jwtExpirationMs}") long jwtExpiration) {
+        this.jwtSecret = Keys.secretKeyFor(SignatureAlgorithm.HS512);
+        this.jwtExpiration = jwtExpiration;
+    }
 
     public String generateToken(Authentication authentication) {
-        byte[] keyBytes = jwtSecret.getBytes(); // Convierte la clave secreta a bytes
-        SecretKey secretKey = Keys.hmacShaKeyFor(keyBytes); // Genera la clave secreta
-
-        // Obtener el email del usuario autenticado usando SecurityUtils
-        String email = SecurityUtils.getCurrentAuthenticatedEmail();
-        // Verificación para asegurarse de que el email no sea nulo
-        if (email == null) {
-        throw new IllegalStateException("No se pudo obtener el email del usuario autenticado.");
-        }
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String roles = authentication.getAuthorities().stream()
+                .map(authority -> authority.getAuthority())
+                .collect(Collectors.joining(","));
 
         return Jwts.builder()
-            .setSubject(email) // Usar el email como subject
-            .setIssuedAt(new Date())
-            .setExpiration(new Date(new Date().getTime() + jwtExpirationMs))
-            .signWith(secretKey, SignatureAlgorithm.HS512) // Firma con la clave
-            .compact();
+                .setSubject(userDetails.getUsername())
+                .claim("roles", roles)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + jwtExpiration))
+                .signWith(jwtSecret)
+                .compact();
     }
 
-    public String getUsernameFromToken(String token) {
-        byte[] keyBytes = jwtSecret.getBytes();
-        SecretKey secretKey = Keys.hmacShaKeyFor(keyBytes);
-
-        return Jwts.parserBuilder()
-                .setSigningKey(secretKey) // Usa la clave secreta generada
-                .build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
+    public String getUsernameFromJWT(String token) {
+        Claims claims = getAllClaimsFromToken(token);
+        return claims.getSubject();
     }
 
-    public boolean validateToken(String token) {
+    public boolean validateToken(String authToken) {
         try {
-            byte[] keyBytes = jwtSecret.getBytes();
-            SecretKey secretKey = Keys.hmacShaKeyFor(keyBytes);
-
             Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+                    .setSigningKey(jwtSecret)
                     .build()
-                    .parseClaimsJws(token);
-
+                    .parseClaimsJws(authToken);
             return true;
-        } catch (JwtException e) { // Atrapamos cualquier excepción JWT
-            return false;
-        } catch (IllegalArgumentException e) {
+        } catch (Exception e) {
+            System.out.println("Invalid JWT: " + e.getMessage());
             return false;
         }
     }
 
-    public String getTokenFromRequest(HttpServletRequest request) {
+    public String getJwtFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
         return null;
+    }
+
+    // New method to get all claims from a token
+    public Claims getAllClaimsFromToken(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(jwtSecret)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+                
     }
 }

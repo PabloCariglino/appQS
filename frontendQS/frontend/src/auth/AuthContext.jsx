@@ -1,31 +1,41 @@
-// AuthContext.jsx
-import PropTypes from "prop-types"; // Importamos PropTypes
-import React, { createContext, useEffect, useState } from "react";
-import { getRoleFromToken, isAuthenticated } from "./authService";
+import PropTypes from "prop-types";
+import { createContext, useEffect, useState } from "react";
+import { getRoleFromToken, isAuthenticated } from "./AuthService";
 
-// Creamos el contexto
 export const AuthContext = createContext();
 
-// Definimos el proveedor del contexto
 export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  // Usamos useEffect para cargar la información del usuario al montar el componente
   useEffect(() => {
-    const userRole = getRoleFromToken();
-    setRole(userRole);
-    setIsLoggedIn(isAuthenticated());
+    if (typeof window !== "undefined") {
+      const token = sessionStorage.getItem("token");
+      console.log("Token en AuthContext:", token);
+
+      if (!token) {
+        console.error("No se encontró un token en sessionStorage.");
+      } else {
+        const userRole = getRoleFromToken();
+        console.log("Rol decodificado del token en AuthContext:", userRole);
+
+        if (!userRole) {
+          console.error("No se pudo decodificar el rol del token.");
+        } else {
+          setRole(userRole);
+        }
+        setIsLoggedIn(isAuthenticated());
+      }
+    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ role, isLoggedIn }}>
+    <AuthContext.Provider value={{ role, setRole, isLoggedIn, setIsLoggedIn }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Definimos las prop-types para validar las props
 AuthProvider.propTypes = {
-  children: PropTypes.node.isRequired, // children es obligatorio
+  children: PropTypes.node.isRequired,
 };

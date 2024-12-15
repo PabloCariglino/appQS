@@ -6,14 +6,16 @@ import org.springframework.stereotype.Component;
 @Component
 @ConfigurationProperties(prefix = "app")
 public class JwtProperties {
-    private String jwtSecret;
+
+    // Tiempo de expiración del token JWT en milisegundos
+    private long jwtExpirationMs;
 
     // Getters y Setters
-    public String getJwtSecret() {
-        return jwtSecret;
+    public long getJwtExpirationMs() {
+        return jwtExpirationMs;
     }
 
-    public void setJwtSecret(String jwtSecret) {
-        this.jwtSecret = jwtSecret;
+    public void setJwtExpirationMs(long jwtExpirationMs) {
+        this.jwtExpirationMs = jwtExpirationMs;
     }
 }

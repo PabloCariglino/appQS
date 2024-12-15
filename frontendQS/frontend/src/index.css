@@ -1,7 +1,16 @@
+/* Asegúrate de ajustar el margen superior para todas las páginas */
 body {
   margin: 0;
-  /* display: flex; */
-  place-items: center;
-  width: auto;
-  margin-top: 30px; /* Ajusta el margen del contenido para no quedar debajo del navbar */
+  font-family: Arial, sans-serif; /* Un estilo base limpio */
+  background-color: #f8f9fa; /* Fondo claro para consistencia */
+}
+
+html {
+  height: 100%; /* Mantén el html y body con altura completa */
+}
+
+#root {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }

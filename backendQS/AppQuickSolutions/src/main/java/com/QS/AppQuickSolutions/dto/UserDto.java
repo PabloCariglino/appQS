@@ -31,5 +31,6 @@ public class UserDto {
 
     private Boolean userStatus;
 
+    @NotEmpty(message = "El rol no debe estar vacío")
     private Role role;
 }

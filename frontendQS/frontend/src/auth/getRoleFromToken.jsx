@@ -1,12 +1,14 @@
 import jwtDecode from "jwt-decode";
 
 export const getRoleFromToken = () => {
-  const token = localStorage.getItem("token");
-  if (!token) return null; // No hay token
+  const token = sessionStorage.getItem("token"); // Usa el mismo storage donde guardas el token
+  if (!token) return null;
   try {
     const decodedToken = jwtDecode(token);
-    return decodedToken.role; // Suponiendo que el token tiene el campo `role`
+    console.log("Token decodificado:", decodedToken); // Esto mostrará todos los claims del token
+    return decodedToken.roles || null; // Suponiendo que el claim se llama 'roles'
   } catch (error) {
-    return null; // Token inválido o expirado
+    console.error("Error al decodificar el token:", error);
+    return null;
   }
 };

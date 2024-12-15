@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,14 +24,10 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // @Autowired
-    // private BCryptPasswordEncoder passwordEncoder;
-
     public User registerUser(UserDto userDto) {
-
-       // Validar si el correo ya está en uso
+        // Validar si el correo ya está en uso
         if (userRepository.existsByEmail(userDto.getEmail())) {
-        throw new IllegalArgumentException("El correo electrónico ya está registrado.");
+            throw new IllegalArgumentException("El correo electrónico ya está registrado.");
         }
 
         // Crear un nuevo usuario
@@ -41,8 +36,10 @@ public class UserService {
         newUser.setEmail(userDto.getEmail());
         newUser.setPassword(passwordEncoder.encode(userDto.getPassword()));
         newUser.setUserStatus(userDto.getUserStatus() != null ? userDto.getUserStatus() : true);  // Por defecto activo
-        newUser.setRole(userDto.getRole()); 
-   
+        newUser.setRole(userDto.getRole());
+        // newUser.setRole(Role.ADMIN);
+
+
         // Guardar el usuario en la base de datos
         User savedUser = userRepository.save(newUser);
 
@@ -58,14 +55,13 @@ public class UserService {
         User existingUser = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        // Actualizar solo los campos permitidos
         existingUser.setUserName(userUpdateDto.getUserName());
-        
+
         if (userUpdateDto.getPassword() != null && !userUpdateDto.getPassword().isEmpty()) {
-            existingUser.setPassword(new BCryptPasswordEncoder().encode(userUpdateDto.getPassword())); // Encriptar la nueva contraseña
+            existingUser.setPassword(passwordEncoder.encode(userUpdateDto.getPassword())); // Usar el bean de passwordEncoder
         }
 
-        return userRepository.save(existingUser); // Guarda el usuario actualizado en la base de datos
+        return userRepository.save(existingUser);
     }
 
     // Cambiar el estado del usuario (alta/baja)
@@ -90,14 +86,7 @@ public class UserService {
     }
 
     // Buscar usuario por Email
-    // public User findUserByEmail(String email) {
-    //     return userRepository.findByEmail(email)
-    //             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-    // }
-
-    //Buscar usuario por Email
     public Optional<User> findUserByEmail(String email) {
-    return userRepository.findByEmail(email);
+        return userRepository.findByEmail(email);
     }
-
 }

@@ -11,8 +11,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UserUpdateDto {
+    
     @NotBlank(message = "El nombre de usuario es obligatorio")
     private String userName;
 
-    private String password; // Este campo puede ser opcional
+    @NotBlank(message = "La contraseña no debe estar vacía")
+    private String password; // Este campo ya no es opcional, se requiere siempre al actualizar
 }

@@ -12,11 +12,13 @@ import com.QS.AppQuickSolutions.enums.Role;
 @Repository
 public interface UserRepository extends JpaRepository<User , Long> {
     
-   //Users findById = null;
+   // Buscar usuario por email
    Optional<User> findByEmail(String email);
 
+   // Buscar usuarios por rol
    List<User> findByRole(Role role);
 
+   // Comprobar si un email ya está registrado
    boolean existsByEmail(String email);
 
    //buscar por email de usuario

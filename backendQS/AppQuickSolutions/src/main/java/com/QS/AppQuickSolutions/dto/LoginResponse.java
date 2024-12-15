@@ -1,21 +1,14 @@
 package com.QS.AppQuickSolutions.dto;
 
-import com.QS.AppQuickSolutions.enums.Role;
-
 public class LoginResponse {
-    private String token;
-    private Role role;
+    private String jwt;
 
-    public LoginResponse(String token, Role role) {
-        this.token = token;
-        this.role = role;
+    public LoginResponse(String jwt) {
+        this.jwt = jwt;
     }
 
-    public String getToken() {
-        return token;
-    }
-
-    public Role getRole() {
-        return role;
+    // Getter
+    public String getJwt() {
+        return jwt;
     }
 }

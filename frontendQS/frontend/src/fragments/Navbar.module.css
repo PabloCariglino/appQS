@@ -1,0 +1,97 @@
+/* Navbar.module.css */
+
+/* Estilos generales para la barra de navegación */
+.nav {
+  background-color: #333; /* Color de fondo para cuando el usuario está logueado */
+  padding: 10px 20px;
+  display: flex; /* Flex para alinear elementos */
+  align-items: center; /* Asegura que todos los elementos estén centrados verticalmente */
+  position: fixed; /* Hace que el navbar esté fijo en la parte superior */
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  transition: background-color 0.3s ease; /* Transición suave para cambiar el color de fondo */
+}
+
+/* Estilo para el navbar transparente */
+.transparentNav {
+  background-color: transparent; /* Fondo transparente */
+  position: absolute; /* Posiciona el navbar sin fijarlo en la parte superior */
+}
+
+/* Estilo del logo */
+.logoLink {
+  display: flex;
+  align-items: center;
+  margin-right: auto; /* Empuja el logo a la izquierda y los enlaces a la derecha */
+}
+
+.logo {
+  height: 40px; /* Ajusta el tamaño del logo según necesites */
+  width: auto;
+}
+
+/* Alinear los enlaces del navbar hacia la derecha */
+.ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex; /* Hace que los elementos se dispongan en una fila */
+  gap: 20px; /* Espacio entre los elementos de la lista */
+}
+
+.li {
+  margin: 0;
+}
+
+.a {
+  text-decoration: none;
+  padding: 8px 16px;
+  font-weight: 500;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.a:hover {
+  color: #b11500;
+  background-color: #575757;
+  border-radius: 5px;
+}
+
+/* Icono para el menú en dispositivos móviles */
+.menuToggle {
+  display: none;
+  font-size: 24px;
+  color: white;
+  cursor: pointer;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nav {
+    justify-content: space-between; /* Ajusta la justificación del contenido para dispositivos móviles */
+  }
+
+  .ul {
+    flex-direction: column;
+    display: none; /* Oculta la lista por defecto */
+    background-color: #333; /* Color de fondo del menú desplegable */
+    position: absolute; /* Posiciona el menú debajo del navbar */
+    top: 60px; /* Ajusta según la altura del navbar */
+    right: 0;
+    left: 0;
+    z-index: 999;
+  }
+
+  .ul.active {
+    display: flex;
+  }
+
+  .li {
+    margin: 10px 0;
+  }
+
+  .menuToggle {
+    display: block;
+  }
+}

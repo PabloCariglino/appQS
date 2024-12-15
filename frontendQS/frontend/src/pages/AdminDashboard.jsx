@@ -3,14 +3,15 @@ import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
-import { useNavigate } from "react-router-dom";
-import "./AdminDashboard.css";
+import Navbar from "../fragments/Navbar";
+import Footer from "./../fragments/Footer";
+import styles from "./AdminDashboard.module.css";
 
 const AdminDashboard = () => {
-  const navigate = useNavigate();
   const [events, setEvents] = useState([]);
+  const [error, setError] = useState(null);
   const [modalIsOpen, setModalIsOpen] = useState(false);
   const [confirmDeleteModalIsOpen, setConfirmDeleteModalIsOpen] =
     useState(false);
@@ -18,121 +19,130 @@ const AdminDashboard = () => {
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: "",
-    color: "#3788d8",
+    color: "#80CCE5", // Valor por defecto
   });
+
+  const pastelColors = [
+    "#FFB3C1",
+    "#FFA726",
+    "#80CCE5",
+    "#93D475",
+    "#BF8080",
+    "#E6B88A",
+  ];
 
   // Cargar eventos desde el backend
   useEffect(() => {
-    axios
-      .get("/api/events")
-      .then((response) => setEvents(response.data))
-      .catch((error) => console.error("Error fetching events:", error));
+    const fetchEvents = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/api/events");
+        setEvents(response.data || []);
+      } catch (err) {
+        setError("Error al cargar los eventos. Por favor, intenta nuevamente.");
+        console.error("Error fetching events:", err);
+      }
+    };
+    fetchEvents();
   }, []);
 
-  // Abrir modal para crear o editar un evento
   const openModal = (event = null, dateStr = null) => {
     if (event) {
       setSelectedEvent(event);
       setNewEvent({ ...event });
     } else {
       setSelectedEvent(null);
-      setNewEvent({ title: "", date: dateStr, color: "#3788d8" });
+      setNewEvent({ title: "", date: dateStr, color: pastelColors[0] });
     }
     setModalIsOpen(true);
   };
 
-  // Cerrar modal
-  const closeModal = () => {
-    setModalIsOpen(false);
-    setSelectedEvent(null);
-  };
+  const closeModal = () => setModalIsOpen(false);
 
-  // Abrir modal de confirmación de eliminación
-  const openConfirmDeleteModal = () => {
-    setConfirmDeleteModalIsOpen(true);
-  };
-
-  // Cerrar modal de confirmación de eliminación
-  const closeConfirmDeleteModal = () => {
-    setConfirmDeleteModalIsOpen(false);
-  };
-
-  // Manejar la creación o edición de eventos
-  const handleEventSubmit = (e) => {
+  const handleEventSubmit = async (e) => {
     e.preventDefault();
-    if (selectedEvent) {
-      axios
-        .put(`/api/events/${selectedEvent.id}`, newEvent)
-        .then((response) => {
-          const updatedEvents = events.map((event) =>
+    if (!newEvent.title || !newEvent.date) {
+      setError("Por favor, complete todos los campos del evento.");
+      return;
+    }
+    try {
+      if (selectedEvent) {
+        const response = await axios.put(
+          `http://localhost:8080/api/events/${selectedEvent.id}`,
+          newEvent
+        );
+        setEvents((prev) =>
+          prev.map((event) =>
             event.id === selectedEvent.id ? response.data : event
-          );
-          setEvents(updatedEvents);
-          closeModal();
-        })
-        .catch((error) => console.error("Error updating event:", error));
-    } else {
-      axios
-        .post("/api/events", newEvent)
-        .then((response) => {
-          setEvents([...events, response.data]);
-          closeModal();
-        })
-        .catch((error) => console.error("Error creating event:", error));
+          )
+        );
+      } else {
+        const response = await axios.post(
+          "http://localhost:8080/api/events",
+          newEvent
+        );
+        setEvents((prev) => [...prev, response.data]);
+      }
+      closeModal();
+    } catch (err) {
+      setError("Error al guardar el evento. Por favor, intenta nuevamente.");
+      console.error("Error saving event:", err);
     }
   };
 
-  // Confirmar eliminación de evento
-  const handleConfirmDelete = () => {
+  const openConfirmDeleteModal = () => setConfirmDeleteModalIsOpen(true);
+  const closeConfirmDeleteModal = () => setConfirmDeleteModalIsOpen(false);
+
+  const handleConfirmDelete = async () => {
     if (selectedEvent) {
-      axios
-        .delete(`/api/events/${selectedEvent.id}`)
-        .then(() => {
-          setEvents(events.filter((event) => event.id !== selectedEvent.id));
-          closeConfirmDeleteModal();
-          closeModal();
-        })
-        .catch((error) => console.error("Error deleting event:", error));
+      try {
+        await axios.delete(
+          `http://localhost:8080/api/events/${selectedEvent.id}`
+        );
+        setEvents((prev) =>
+          prev.filter((event) => event.id !== selectedEvent.id)
+        );
+        closeConfirmDeleteModal();
+        closeModal();
+      } catch (err) {
+        setError("Error al eliminar el evento. Por favor, intenta nuevamente.");
+        console.error("Error deleting event:", err);
+      }
     }
-  };
-
-  // Evento cuando se hace clic en un día del calendario
-  const handleDateClick = (info) => {
-    openModal(null, info.dateStr);
-  };
-
-  // Evento al hacer clic en un evento ya creado
-  const handleEventClick = (info) => {
-    const clickedEvent = events.find(
-      (event) => event.id === parseInt(info.event.id)
-    );
-    openModal(clickedEvent);
-  };
-
-  // Manejar el cambio de color de eventos
-  const handleColorChange = (color) => {
-    setNewEvent({ ...newEvent, color });
   };
 
   return (
-    <div className="admin-dashboard">
-      <h2>Admin Dashboard</h2>
+    <div className={styles.adminDashboard}>
+      <Navbar />
+      <div className={`container ${styles.calendarContainer}`}>
+        <h2 className="text-center">Admin Dashboard</h2>
+        {error && <div className="alert alert-danger">{error}</div>}
 
-      {/* Calendario con FullCalendar */}
-      <FullCalendar
-        plugins={[dayGridPlugin, interactionPlugin]}
-        initialView="dayGridMonth"
-        dateClick={handleDateClick}
-        events={events.map((event) => ({
-          id: event.id.toString(),
-          title: event.title,
-          start: event.date,
-          color: event.color,
-        }))}
-        eventClick={handleEventClick}
-      />
+        <div className={styles.fullCalendarWrapper}>
+          <FullCalendar
+            plugins={[dayGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            dateClick={(info) => openModal(null, info.dateStr)}
+            events={events.map((event) => ({
+              id: event.id.toString(),
+              title: event.title,
+              start: event.date,
+              color: event.color,
+            }))}
+            eventClick={(info) => {
+              const clickedEvent = events.find(
+                (event) => event.id === parseInt(info.event.id)
+              );
+              openModal(clickedEvent);
+            }}
+            eventContent={(eventInfo) => (
+              <div className={styles.fullCalendarEventTitle}>
+                {eventInfo.event.title}
+              </div>
+            )}
+          />
+        </div>
+      </div>
 
-      {/* Modal para crear o editar un evento */}
       <Modal show={modalIsOpen} onHide={closeModal} centered>
         <Modal.Header closeButton>
           <Modal.Title>
@@ -142,9 +152,8 @@ const AdminDashboard = () => {
         <Modal.Body>
           <form onSubmit={handleEventSubmit}>
             <div>
-              <label>Descripcion del Evento:</label>
+              <label>Descripción del Evento:</label>
               <textarea
-                type="text"
                 className="form-control form-control-lg"
                 value={newEvent.title}
                 onChange={(e) =>
@@ -167,12 +176,18 @@ const AdminDashboard = () => {
             </div>
             <div>
               <label>Color:</label>
-              <input
-                type="color"
-                className="form-control"
-                value={newEvent.color}
-                onChange={(e) => handleColorChange(e.target.value)}
-              />
+              <div className={styles.colorOptions}>
+                {pastelColors.map((color) => (
+                  <div
+                    key={color}
+                    className={`${styles.colorOption} ${
+                      newEvent.color === color ? styles.selectedColor : ""
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => setNewEvent({ ...newEvent, color })}
+                  ></div>
+                ))}
+              </div>
             </div>
             <div className="d-flex justify-content-between mt-3">
               {selectedEvent && (
@@ -188,7 +203,6 @@ const AdminDashboard = () => {
         </Modal.Body>
       </Modal>
 
-      {/* Modal de confirmación de eliminación */}
       <Modal
         show={confirmDeleteModalIsOpen}
         onHide={closeConfirmDeleteModal}
@@ -209,6 +223,7 @@ const AdminDashboard = () => {
           </div>
         </Modal.Body>
       </Modal>
+      <Footer />
     </div>
   );
 };

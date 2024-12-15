@@ -8,10 +8,16 @@ public class SecurityUtils {
 
     public static String getCurrentAuthenticatedEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof UserDetails) {
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            return userDetails.getUsername(); // Devuelve el email del usuario autenticado
+
+        if (authentication != null && authentication.isAuthenticated()) {
+            Object principal = authentication.getPrincipal();
+            if (principal instanceof UserDetails) {
+                return ((UserDetails) principal).getUsername(); // El username en UserDetails es el email del usuario
+            } else if (principal instanceof String) {
+                return (String) principal;
+            }
         }
-        return null;
+
+        return null; // No hay usuario autenticado
     }
 }

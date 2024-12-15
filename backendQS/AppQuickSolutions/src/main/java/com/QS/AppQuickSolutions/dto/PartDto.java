@@ -1,6 +1,7 @@
 package com.QS.AppQuickSolutions.dto;
 
-import java.time.LocalDateTime;
+import com.QS.AppQuickSolutions.entity.CustomPart;
+import com.QS.AppQuickSolutions.entity.PartMaterial;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -14,14 +15,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PartDto {
-    private String partName;
-    private String material;
+
+    private CustomPart customPart;
+    private PartMaterial partMaterial;
     private Double totalweightKg;
     private Double sheetThicknessMm;
     private Double lengthPiecesMm;
     private Double heightMm;
     private Double widthMm;
-    private LocalDateTime scanDateTime;
     private Boolean receptionState;
     private Boolean qualityControlState;
     private String observations;

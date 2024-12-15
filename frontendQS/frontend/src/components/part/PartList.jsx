@@ -7,6 +7,7 @@ import styles from "./PartList.module.css";
 const PartList = () => {
   const { projectId } = useParams(); // Obtén el ID del proyecto desde la URL
   const [parts, setParts] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchParts = async () => {
@@ -15,8 +16,11 @@ const PartList = () => {
           `http://localhost:8080/api/projects/${projectId}/parts`
         );
         setParts(response.data);
-      } catch (error) {
-        console.error("Error fetching parts:", error);
+      } catch (err) {
+        setError(
+          "Hubo un error al obtener las piezas. Por favor, intenta de nuevo."
+        );
+        console.error("Error fetching parts:", err);
       }
     };
     fetchParts();
@@ -24,6 +28,7 @@ const PartList = () => {
 
   return (
     <Container className={styles.tableContainer}>
+      {error && <div className="alert alert-danger">{error}</div>}
       <h2>Piezas del Proyecto {projectId}</h2>
       <Table striped bordered hover className={styles.partTable}>
         <thead>
@@ -39,10 +44,10 @@ const PartList = () => {
           {parts.map((part) => (
             <tr key={part.id}>
               <td>{part.id}</td>
-              <td>{part.name}</td>
+              <td>{part.customPart?.customPart || "Sin nombre"}</td>
               <td>{part.receptionState ? "Recibido" : "Pendiente"}</td>
               <td>{part.qualityControlState ? "Aprobado" : "Rechazado"}</td>
-              <td>{part.observations}</td>
+              <td>{part.observations || "N/A"}</td>
             </tr>
           ))}
         </tbody>

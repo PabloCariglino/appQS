@@ -1,74 +1,58 @@
-import { useAuth0 } from "@auth0/auth0-react";
-import axios from "axios";
-import { useEffect, useState } from "react";
-import {
-  Navigate,
-  Route,
-  BrowserRouter as Router,
-  Routes,
-} from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { getRoleFromToken, isAuthenticated } from "./auth/AuthService";
+import Login from "./auth/Login";
+import useAuthContext from "./auth/useAuthContext";
+import AddPartMaterial from "./components/material/AddPartMaterial";
+import AddCustomPart from "./components/part/AddCustomPart";
+import CreateProject from "./components/project/CreateProject";
+import ProjectList from "./components/project/ProjectList";
 import RegisterUser from "./components/user/RegisterUser";
 import AdminDashboard from "./pages/AdminDashboard";
 import Home from "./pages/Home";
 import OperatorDashboard from "./pages/OperatorDashboard";
 
-function App() {
-  const {
-    isAuthenticated,
-    loginWithRedirect,
-    logout,
-    user,
-    getAccessTokenSilently,
-  } = useAuth0();
-  const [role, setRole] = useState(null); // Estado para el rol
+const App = () => {
+  const { isLoggedIn, role, setRole, setIsLoggedIn } = useAuthContext();
 
+  // Actualizar el estado de autenticación y rol al cargar la app
   useEffect(() => {
-    const fetchUserRole = async () => {
-      if (user) {
-        try {
-          const token = await getAccessTokenSilently();
-          const response = await axios.get(
-            `/api/users/role?email=${user.email}`,
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-          setRole(response.data); // Guardamos el rol recibido
-        } catch (error) {
-          console.error("Error obteniendo el rol del usuario:", error);
-        }
-      }
-    };
-
-    fetchUserRole();
-  }, [user, getAccessTokenSilently]);
-
-  if (!isAuthenticated) {
-    return <button onClick={() => loginWithRedirect()}>Iniciar Sesión</button>;
-  }
-
-  const handleLogout = () => logout({ returnTo: window.location.origin });
+    setIsLoggedIn(isAuthenticated());
+    setRole(getRoleFromToken());
+  }, [setIsLoggedIn, setRole]);
 
   return (
-    <Router>
-      <button onClick={handleLogout}>Cerrar Sesión</button>
+    <div>
       <Routes>
+        {/* Rutas públicas */}
         <Route path="/" element={<Home />} />
-        {role === "ADMIN" && (
-          <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/login" element={<Login />} />
+
+        {/* Rutas protegidas para ADMIN */}
+        {isLoggedIn && role === "ADMIN" && (
+          <>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/register-user" element={<RegisterUser />} />
+            <Route path="/project-list" element={<ProjectList />} />
+            <Route path="/create-project" element={<CreateProject />} />
+            <Route path="/add-part-material" element={<AddPartMaterial />} />
+            <Route path="/add-custom-part" element={<AddCustomPart />} />
+          </>
         )}
-        {role === "OPERATOR" && (
-          <Route path="/operator" element={<OperatorDashboard />} />
+
+        {/* Rutas protegidas para OPERATOR */}
+        {isLoggedIn && role === "OPERATOR" && (
+          <>
+            <Route path="/operator" element={<OperatorDashboard />} />
+            <Route path="/project-list" element={<ProjectList />} />
+          </>
         )}
-        <Route
-          path="/register-user"
-          element={role === "ADMIN" ? <RegisterUser /> : <Navigate to="/" />}
-        />
+
+        {/* Redirigir rutas desconocidas */}
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </Router>
+    </div>
   );
-}
+};
 
 export default App;

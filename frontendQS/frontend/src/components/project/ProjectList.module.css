@@ -4,13 +4,24 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
+  margin-top: 60px; /* Agregado para que no quede oculto por el navbar */
 }
 
-.createProjectButtonContainer {
+.buttonContainer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   width: 100%;
   margin-bottom: 10px;
+}
+
+.leftButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.rightButton {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .createButton {

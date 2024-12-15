@@ -3,13 +3,8 @@ package com.QS.AppQuickSolutions.entity;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import com.QS.AppQuickSolutions.enums.Material;
-import com.QS.AppQuickSolutions.enums.PartName;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -36,12 +31,18 @@ public class Part{
     @ManyToOne
     private Project project;
     
-    @Enumerated(EnumType.STRING)
-    private PartName partName; // Enum para nombres de piezas
+    @ManyToOne
+    private CustomPart customPart; //nombre de pieza creada con su imagen
+    // @Enumerated(EnumType.STRING)
+    // private PartName partName; 
+    // Enum para nombres de piezas
     // private String image;
 
-    @Enumerated(EnumType.STRING)
-    private Material material; // Enum para material
+    @ManyToOne
+    private PartMaterial partMaterial;
+    // @Enumerated(EnumType.STRING)
+    // private Material material; 
+    // Enum para material
     
     private Double totalweightKg; //Peso de chapa
     private Double SheetThicknessMm; //Espesor de chapa
@@ -55,6 +56,6 @@ public class Part{
     private String observations; //Observaciones
 
     private String qrCodeData; //Guarda el QR asociado
-    private String qrCodeUrl; //Guarda la URL o el path de la imagen del QR
+    private String qrCodeFilePath; //Guarda la URL o el path de la imagen del QR
     
 }
