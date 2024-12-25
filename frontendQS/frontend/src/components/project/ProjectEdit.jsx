@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import BackButton from "../../fragments/BackButton";
 import projectService from "../../services/ProjectService";
 
 const ProjectEdit = () => {
@@ -31,7 +32,7 @@ const ProjectEdit = () => {
     try {
       await projectService.updateProjectById(id, project);
       alert("Proyecto actualizado con éxito.");
-      navigate(`/projects/${id}`); // Redirige a la vista del proyecto
+      navigate(`/projects/${id}`);
     } catch (error) {
       setError("Error al guardar los cambios del proyecto.");
       console.error("Error saving project data:", error);
@@ -100,6 +101,7 @@ const ProjectEdit = () => {
       >
         Cancelar
       </button>
+      <BackButton />
     </div>
   );
 };

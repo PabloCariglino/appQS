@@ -1,8 +1,7 @@
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
-import Footer from "../../fragments/Footer";
-import Navbar from "../../fragments/Navbar";
+import BackButton from "../../fragments/BackButton";
 import ProjectService from "../../services/ProjectService";
 import styles from "./CreateProject.module.css";
 
@@ -33,12 +32,10 @@ function CreateProject() {
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const customPartsResponse = await axios.get(
-          "http://localhost:8080/api/customParts"
-        );
-        const materialsResponse = await axios.get(
-          "http://localhost:8080/api/partMaterials"
-        );
+        const [customPartsResponse, materialsResponse] = await Promise.all([
+          axios.get("http://localhost:8080/api/customParts"),
+          axios.get("http://localhost:8080/api/partMaterials"),
+        ]);
         setCustomPartOptions(customPartsResponse.data);
         setMaterialOptions(materialsResponse.data);
       } catch (error) {
@@ -75,6 +72,11 @@ function CreateProject() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!project.projectName || !project.clientAlias || !project.contact) {
+      alert("Por favor, complete todos los campos obligatorios.");
+      return;
+    }
+
     try {
       await ProjectService.createNewProject(project);
       alert("¡Proyecto creado con éxito!");
@@ -93,7 +95,6 @@ function CreateProject() {
 
   return (
     <>
-      <Navbar />
       <div className={styles.container}>
         <h1 className={styles.title}>Crear Proyecto</h1>
         {error && <div className="alert alert-danger">{error}</div>}
@@ -314,7 +315,7 @@ function CreateProject() {
           </button>
         </form>
       </div>
-      <Footer />
+      <BackButton />
     </>
   );
 }

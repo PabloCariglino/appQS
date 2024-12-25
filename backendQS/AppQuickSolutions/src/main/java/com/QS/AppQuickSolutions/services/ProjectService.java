@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.QS.AppQuickSolutions.dto.PartDto;
 import com.QS.AppQuickSolutions.dto.ProjectDto;
 import com.QS.AppQuickSolutions.entity.Part;
 import com.QS.AppQuickSolutions.entity.Project;
@@ -19,8 +20,18 @@ public class ProjectService {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private PartService partService;
+
     public Project createProject(ProjectDto projectDto) {
-        Project project = convertToEntity(projectDto);
+        validateProjectDto(projectDto);
+
+        Project project = new Project();
+        updateProjectDetails(project, projectDto);
+
+        List<Part> parts = createPartsForProject(project, projectDto.getParts());
+        project.setParts(parts);
+
         return projectRepository.save(project);
     }
 
@@ -30,8 +41,16 @@ public class ProjectService {
     }
 
     public Project updateProject(Long id, ProjectDto projectDto) {
+        validateProjectDto(projectDto);
+
         Project existingProject = getProjectById(id);
         updateProjectDetails(existingProject, projectDto);
+
+        // Actualizar las piezas asociadas
+        List<Part> updatedParts = createPartsForProject(existingProject, projectDto.getParts());
+        existingProject.getParts().clear();
+        existingProject.getParts().addAll(updatedParts);
+
         return projectRepository.save(existingProject);
     }
 
@@ -46,23 +65,32 @@ public class ProjectService {
         projectRepository.deleteById(id);
     }
 
-    private Project convertToEntity(ProjectDto projectDto) {
-        Project project = new Project();
-        updateProjectDetails(project, projectDto);
+    private List<Part> createPartsForProject(Project project, List<PartDto> partDtos) {
+        if (partDtos == null || partDtos.isEmpty()) {
+            return List.of();
+        }
 
-        List<Part> parts = projectDto.getParts().stream()
+        return partDtos.stream()
                 .map(partDto -> {
-                    Part part = new Part();
-                    // Configurar las partes según el DTO
-                    part.setProject(project);
-                    part.setTotalweightKg(partDto.getTotalweightKg());
-                    part.setSheetThicknessMm(partDto.getSheetThicknessMm());
-                    return part;
+                    try {
+                        return partService.createPart(project, partDto);
+                    } catch (Exception e) {
+                        throw new RuntimeException("Error al crear piezas para el proyecto: " + e.getMessage(), e);
+                    }
                 })
                 .collect(Collectors.toList());
+    }
 
-        project.setParts(parts);
-        return project;
+    private void validateProjectDto(ProjectDto projectDto) {
+        if (projectDto.getProjectName() == null || projectDto.getProjectName().isBlank()) {
+            throw new IllegalArgumentException("El nombre del proyecto no puede estar vacío.");
+        }
+        if (projectDto.getClientAlias() == null || projectDto.getClientAlias().isBlank()) {
+            throw new IllegalArgumentException("El alias del cliente no puede estar vacío.");
+        }
+        if (projectDto.getContact() == null) {
+            throw new IllegalArgumentException("El contacto no puede estar vacío.");
+        }
     }
 
     private void updateProjectDetails(Project project, ProjectDto projectDto) {
@@ -71,4 +99,23 @@ public class ProjectService {
         project.setContact(projectDto.getContact());
         project.setState(projectDto.getState());
     }
+
+    public List<PartDto> getPartsByProject(Long projectId) {
+        Project project = getProjectById(projectId); // Usa el método existente para obtener el proyecto
+        return project.getParts().stream().map(part -> {
+            PartDto partDto = new PartDto();
+            partDto.setCustomPart(part.getCustomPart());
+            partDto.setPartMaterial(part.getPartMaterial());
+            partDto.setTotalweightKg(part.getTotalweightKg());
+            partDto.setSheetThicknessMm(part.getSheetThicknessMm());
+            partDto.setLengthPiecesMm(part.getLengthPiecesMm());
+            partDto.setHeightMm(part.getHeightMm());
+            partDto.setWidthMm(part.getWidthMm());
+            partDto.setReceptionState(part.getReceptionState());
+            partDto.setQualityControlState(part.getQualityControlState());
+            partDto.setObservations(part.getObservations());
+            return partDto;
+        }).collect(Collectors.toList());
+    }
+    
 }

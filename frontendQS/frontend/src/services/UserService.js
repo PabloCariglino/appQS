@@ -1,110 +1,113 @@
-// UserService.js
 import axios from "axios";
+import { getAccessToken } from "./AuthService";
 
-// Configuración base de Axios
-const API_URL = "http://localhost:8080/api/user-dashboard"; // Cambia esto según tu configuración
-const instance = axios.create({
-  baseURL: API_URL,
-});
+const API_URL = "http://localhost:8080/api/user-dashboard";
 
-// Interceptor para agregar el token JWT a todas las solicitudes
+const instance = axios.create({ baseURL: API_URL });
+
+// Interceptor para incluir el token en todas las solicitudes
 instance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token"); // Recupera el token del localStorage
-    console.log("Interceptor: Token recuperado de localStorage:", token);
-
+    const token = getAccessToken();
     if (token) {
-      config.headers.Authorization = `Bearer ${token}`; // Agrega el token a los encabezados
-      console.log(
-        "Interceptor: Token agregado a los headers:",
-        config.headers.Authorization
-      );
+      config.headers["Authorization"] = `Bearer ${token}`;
+      console.log("Token enviado en la solicitud:", token); // Log para confirmar el token
     } else {
-      console.warn("Interceptor: No se encontró token en localStorage");
+      console.warn("Token no disponible para la solicitud.");
     }
     return config;
   },
   (error) => {
-    console.error("Interceptor: Error al configurar la solicitud", error);
+    console.error("Error en el interceptor de la solicitud:", error);
     return Promise.reject(error);
   }
 );
 
-// Funciones de servicio para interactuar con el backend
+// Funciones del servicio de usuario
 const UserService = {
-  // Registrar un nuevo usuario
   registerUser: async (userDto) => {
-    console.log("registerUser: Registrando un nuevo usuario...");
-    console.log("Datos enviados:", userDto);
-    return await handleServiceCall(() =>
-      instance.post("/register-user", userDto)
-    );
-  },
-
-  // Actualizar un usuario existente
-  updateUser: async (id, userUpdateDto) => {
-    console.log(`updateUser: Actualizando usuario con ID ${id}...`);
-    console.log("Datos enviados:", userUpdateDto);
-    return await handleServiceCall(() =>
-      instance.put(`/update-user/${id}`, userUpdateDto)
-    );
-  },
-
-  // Cambiar el estado de un usuario
-  changeUserStatus: async (id) => {
-    console.log(
-      `changeUserStatus: Cambiando el estado del usuario con ID ${id}...`
-    );
-    return await handleServiceCall(() =>
-      instance.patch(`/change-user-status/${id}`)
-    );
-  },
-
-  // Listar todos los usuarios
-  listUsers: async () => {
-    console.log("listUsers: Solicitando lista de usuarios...");
-    return await handleServiceCall(() => instance.get("/user-list"));
-  },
-
-  // Buscar usuario por ID
-  findUserById: async (id) => {
-    console.log(`findUserById: Buscando usuario con ID ${id}...`);
-    return await handleServiceCall(() => instance.get(`/find-user/${id}`));
-  },
-
-  // Buscar usuario por email
-  findUserByEmail: async (email) => {
-    console.log(`findUserByEmail: Buscando usuario con email ${email}...`);
-    return await handleServiceCall(() =>
-      instance.get(`/find-user-by-email/${email}`)
-    );
-  },
-};
-
-// Manejo centralizado de errores y respuesta
-const handleServiceCall = async (apiCall) => {
-  try {
-    console.log("handleServiceCall: Realizando llamada al backend...");
-    const response = await apiCall();
-    console.log("handleServiceCall: Respuesta exitosa:", response);
-    return { success: true, data: response.data };
-  } catch (error) {
-    console.error("handleServiceCall: Error al realizar la llamada:", error);
-    console.error("Detalles del error:", {
-      message: error.message,
-      response: error.response,
-    });
-
-    if (error.response?.status === 403) {
-      console.warn("handleServiceCall: Error 403 - Acceso prohibido.");
+    try {
+      console.log("Intentando registrar usuario con datos:", userDto); // Log de datos enviados
+      const response = await instance.post("/register-user", userDto);
+      console.log("Respuesta del backend (registro usuario):", response.data); // Log de respuesta
+      return response.data;
+    } catch (error) {
+      console.error("Error al registrar usuario:", error.response || error); // Log de error detallado
+      throw error; // Re-lanzar el error para manejo en el componente
     }
+  },
 
-    return {
-      success: false,
-      message:
-        error.response?.data?.message || error.message || "Unknown error",
-    };
-  }
+  updateUser: async (id, userUpdateDto) => {
+    try {
+      console.log(`Intentando actualizar usuario con ID: ${id}`, userUpdateDto);
+      const response = await instance.put(`/update-user/${id}`, userUpdateDto);
+      console.log("Respuesta del backend (actualizar usuario):", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error al actualizar usuario:", error.response || error);
+      throw error;
+    }
+  },
+
+  changeUserStatus: async (id) => {
+    try {
+      console.log(`Intentando cambiar estado del usuario con ID: ${id}`);
+      const response = await instance.patch(`/change-user-status/${id}`);
+      console.log("Respuesta del backend (cambiar estado):", response.data);
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Error al cambiar estado del usuario:",
+        error.response || error
+      );
+      throw error;
+    }
+  },
+
+  listUsers: async () => {
+    try {
+      console.log("Intentando listar usuarios...");
+      const response = await instance.get("/user-list");
+      console.log("Respuesta del backend (listar usuarios):", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error al listar usuarios:", error.response || error);
+      throw error;
+    }
+  },
+
+  findUserById: async (id) => {
+    try {
+      console.log(`Intentando buscar usuario con ID: ${id}`);
+      const response = await instance.get(`/find-user/${id}`);
+      console.log(
+        "Respuesta del backend (buscar usuario por ID):",
+        response.data
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error al buscar usuario por ID:", error.response || error);
+      throw error;
+    }
+  },
+
+  findUserByEmail: async (email) => {
+    try {
+      console.log(`Intentando buscar usuario con email: ${email}`);
+      const response = await instance.get(`/find-user-by-email/${email}`);
+      console.log(
+        "Respuesta del backend (buscar usuario por email):",
+        response.data
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        "Error al buscar usuario por email:",
+        error.response || error
+      );
+      throw error;
+    }
+  },
 };
 
 export default UserService;

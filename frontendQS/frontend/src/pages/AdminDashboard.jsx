@@ -5,8 +5,7 @@ import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
-import Navbar from "../fragments/Navbar";
-import Footer from "./../fragments/Footer";
+import { getAccessToken } from "../auth/AuthService";
 import styles from "./AdminDashboard.module.css";
 
 const AdminDashboard = () => {
@@ -35,10 +34,14 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get("http://localhost:8080/api/events");
+        const response = await axios.get("http://localhost:8080/api/events", {
+          headers: {
+            Authorization: `Bearer ${getAccessToken()}`,
+          },
+        });
         setEvents(response.data || []);
       } catch (err) {
-        setError("Error al cargar los eventos. Por favor, intenta nuevamente.");
+        setError("No tienes permisos para acceder a los eventos.");
         console.error("Error fetching events:", err);
       }
     };
@@ -112,7 +115,6 @@ const AdminDashboard = () => {
 
   return (
     <div className={styles.adminDashboard}>
-      <Navbar />
       <div className={`container ${styles.calendarContainer}`}>
         <h2 className="text-center">Admin Dashboard</h2>
         {error && <div className="alert alert-danger">{error}</div>}
@@ -223,7 +225,6 @@ const AdminDashboard = () => {
           </div>
         </Modal.Body>
       </Modal>
-      <Footer />
     </div>
   );
 };

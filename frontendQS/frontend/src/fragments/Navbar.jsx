@@ -15,10 +15,24 @@ function Navbar() {
   };
 
   const handleLogout = async () => {
-    await backendLogout();
-    setIsLoggedIn(false);
-    setRole(null);
-    navigate("/");
+    try {
+      await backendLogout(setIsLoggedIn, setRole);
+      console.log("Usuario deslogueado correctamente.");
+    } catch (error) {
+      console.error("Error al desloguear:", error);
+    }
+  };
+
+  const handleLogoClick = () => {
+    if (isLoggedIn) {
+      if (role === "ADMIN") {
+        navigate("/admin");
+      } else if (role === "OPERATOR") {
+        navigate("/operator");
+      }
+    } else {
+      navigate("/");
+    }
   };
 
   // Determinar si estamos en la página de inicio y no logueado para aplicar navbar transparente
@@ -29,13 +43,13 @@ function Navbar() {
       <div className={styles.menuToggle} onClick={toggleMenu}>
         &#9776; {/* Ícono del menú hamburguesa */}
       </div>
-      <Link to="/" className={styles.logoLink}>
+      <div onClick={handleLogoClick} className={styles.logoLink}>
         <img
           src="/assets/LOGO-blanco2.jpg"
           alt="Logo Empresa"
           className={styles.logo}
         />
-      </Link>
+      </div>
       <ul className={`${styles.ul} ${isOpen ? styles.active : ""}`}>
         {isLoggedIn && (role === "ADMIN" || role === "OPERATOR") && (
           <li className={styles.li}>
@@ -46,8 +60,8 @@ function Navbar() {
         )}
         {isLoggedIn && role === "ADMIN" && (
           <li className={styles.li}>
-            <Link to="/register-user" className={styles.a}>
-              Crear usuario
+            <Link to="/user-list" className={styles.a}>
+              Usuarios
             </Link>
           </li>
         )}

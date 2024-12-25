@@ -2,13 +2,11 @@ package com.QS.AppQuickSolutions;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
-import com.QS.AppQuickSolutions.security.jwt.JwtProperties;
+// import com.QS.AppQuickSolutions.security.jwt.JwtProperties;
+// @EnableConfigurationProperties(JwtProperties.class)
 
 @SpringBootApplication
-@EnableConfigurationProperties(JwtProperties.class)
-
 public class AppQuickSolutionsApplication {
 
 	public static void main(String[] args) {

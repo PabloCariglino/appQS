@@ -27,50 +27,29 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private CustomUserDetailsService customUserDetailsService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws ServletException, IOException {
+protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+        throws ServletException, IOException {
 
-        System.out.println("--- JwtRequestFilter invoked ---");
+    System.out.println("--- JwtRequestFilter invoked ---");
 
-        // Obtener el token JWT desde el encabezado de la solicitud
-        String jwt = jwtTokenProvider.getJwtFromRequest(request);
-        System.out.println("Extracted JWT: " + jwt);
+    String jwt = jwtTokenProvider.getJwtFromRequest(request);
+    System.out.println("JWT recibido en el backend: " + jwt); // Agrega este log
 
-        if (jwt != null) {
-            try {
-                // Validar el token JWT
-                if (jwtTokenProvider.validateToken(jwt)) {
-                    System.out.println("JWT is valid");
+    if (jwt != null && jwtTokenProvider.validateToken(jwt)) {
+        System.out.println("JWT is valid");
+        String username = jwtTokenProvider.getUsernameFromJWT(jwt);
+        UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
 
-                    // Obtener el nombre de usuario desde el JWT
-                    String username = jwtTokenProvider.getUsernameFromJWT(jwt);
-                    System.out.println("Username from JWT: " + username);
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                userDetails, null, userDetails.getAuthorities());
 
-                    // Cargar detalles del usuario
-                    UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
-                    System.out.println("UserDetails loaded: " + userDetails.getUsername());
-
-                    // Crear el objeto de autenticación y configurarlo en el contexto de seguridad
-                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities());
-
-                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                    // Log para confirmar Authorities
-                    System.out.println("Authorities in SecurityContext: "
-                            + SecurityContextHolder.getContext().getAuthentication().getAuthorities());
-                } else {
-                    System.out.println("JWT validation failed");
-                }
-            } catch (Exception e) {
-                System.out.println("Error processing JWT: " + e.getMessage());
-            }
-        } else {
-            System.out.println("JWT is missing from request");
-        }
-
-        // Continuar con la cadena de filtros
-        chain.doFilter(request, response);
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    } else {
+        System.out.println("JWT inválido o ausente.");
     }
+
+    chain.doFilter(request, response);
+}
+
 }

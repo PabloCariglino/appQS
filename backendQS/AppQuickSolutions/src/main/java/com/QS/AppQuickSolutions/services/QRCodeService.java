@@ -20,7 +20,6 @@ import com.google.zxing.qrcode.QRCodeWriter;
 @Service
 public class QRCodeService {
 
-    // Ruta del directorio para guardar los códigos QR, configurada en application.properties
     @Value("${qrcode.upload-dir}")
     private String qrDirectory;
 
@@ -32,28 +31,28 @@ public class QRCodeService {
      * @param height     Alto del QR.
      * @param fileName   Nombre del archivo QR.
      * @return La ruta completa del archivo generado.
-     * @throws WriterException
-     * @throws IOException
+     * @throws WriterException Si hay un error al generar el QR.
+     * @throws IOException     Si hay un error al guardar el archivo.
      */
     public String generateQRCodeImage(String data, int width, int height, String fileName) throws WriterException, IOException {
-        // Crear configuración de codificación
-        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        // Configuración para codificación de caracteres
         Map<EncodeHintType, Object> hints = new HashMap<>();
         hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
 
-        // Crear el directorio si no existe
+        // Asegurar que el directorio exista
         Path qrPathDirectory = FileSystems.getDefault().getPath(qrDirectory);
         if (!Files.exists(qrPathDirectory)) {
             Files.createDirectories(qrPathDirectory);
         }
 
-        // Generar el QR
+        // Generar el código QR
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
         BitMatrix bitMatrix = qrCodeWriter.encode(data, BarcodeFormat.QR_CODE, width, height, hints);
 
-        // Guardar la imagen
+        // Guardar el QR en un archivo
         Path qrPath = qrPathDirectory.resolve(fileName);
         MatrixToImageWriter.writeToPath(bitMatrix, "PNG", qrPath);
 
-        return qrPath.toString();
+        return qrPath.toAbsolutePath().toString(); // Retornar la ruta completa
     }
 }

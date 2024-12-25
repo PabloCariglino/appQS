@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Ignorar la carpeta de uploads en produccion
+src/main/resources/uploads/
+

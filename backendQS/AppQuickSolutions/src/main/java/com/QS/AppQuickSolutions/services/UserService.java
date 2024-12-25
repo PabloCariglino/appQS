@@ -18,13 +18,16 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private EmailService emailService;
+    // @Autowired
+    // private EmailService emailService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
 
     public User registerUser(UserDto userDto) {
+
+        System.out.println("Datos recibidos en registerUser: " + userDto); // Log de los datos recibidos
+
         // Validar si el correo ya está en uso
         if (userRepository.existsByEmail(userDto.getEmail())) {
             throw new IllegalArgumentException("El correo electrónico ya está registrado.");
@@ -44,9 +47,9 @@ public class UserService {
         User savedUser = userRepository.save(newUser);
 
         // Enviar correo de bienvenida
-        String subject = "¡Bienvenido a nuestra plataforma!";
-        String body = "Hola " + userDto.getUserName() + ", gracias por registrarte en nuestra plataforma.";
-        emailService.sendWelcomeEmail(savedUser.getEmail(), subject, body);
+        // String subject = "¡Bienvenido a nuestra plataforma!";
+        // String body = "Hola " + userDto.getUserName() + ", gracias por registrarte en nuestra plataforma.";
+        // emailService.sendWelcomeEmail(savedUser.getEmail(), subject, body);
 
         return savedUser;
     }

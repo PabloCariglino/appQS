@@ -37,9 +37,12 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**", "/", "/login", "/static/**", "/api/events/**").permitAll()
-                .requestMatchers("/api/part/**", "/api/project/**", "/api/project/projects-list", "/api/project/create").hasAnyRole("ADMIN", "OPERATOR")
-                .requestMatchers("/api/project/projects-list").hasRole("ADMIN")
+                .requestMatchers("/api/auth/**", "/", "/login", "/static/**").permitAll()
+                .requestMatchers("/api/part/**", "/api/project/**", "/api/project/projects-list").hasAnyRole("ADMIN", "OPERATOR")
+                .requestMatchers("/api/project/projects-list", "/api/project/create", "/api/events/**","/api/part-materials/**",
+                "/api/customParts/**").hasRole("ADMIN")
+                .requestMatchers("/api/user-dashboard/**").authenticated()
+                .requestMatchers("/uploads/**").permitAll()
                 .anyRequest().authenticated()
             
 

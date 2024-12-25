@@ -2,8 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Container, Table } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../auth/AuthContext";
-import Footer from "../../fragments/Footer";
-import Navbar from "../../fragments/Navbar";
+import BackButton from "../../fragments/BackButton";
 import ProjectService from "../../services/ProjectService";
 import styles from "./ProjectList.module.css";
 
@@ -43,26 +42,25 @@ const ProjectList = () => {
 
   const handleProjectClick = (id) => navigate(`/projects/${id}`);
   const handleCreateProject = () => navigate("/create-project");
-  const handleAddCustomPart = () => navigate("/add-custom-part");
-  const handleAddPartMaterial = () => navigate("/add-part-material");
+  const handlePartCustomList = () => navigate("/PartCustom-list");
+  const handleMaterialList = () => navigate("/material-list");
 
   return (
     <>
-      <Navbar />
       <Container className={styles.tableContainer}>
         <div className={styles.buttonContainer}>
           <div className={styles.leftButtons}>
             <Button
               variant="primary"
               className={styles.createButton}
-              onClick={handleAddCustomPart}
+              onClick={handlePartCustomList}
             >
               Crear Pieza
             </Button>
             <Button
               variant="primary"
               className={styles.createButton}
-              onClick={handleAddPartMaterial}
+              onClick={handleMaterialList}
             >
               Crear Material
             </Button>
@@ -110,7 +108,7 @@ const ProjectList = () => {
           </Table>
         )}
       </Container>
-      <Footer />
+      <BackButton />
     </>
   );
 };

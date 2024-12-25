@@ -1,24 +1,20 @@
 import axios from "axios";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import useAuthContext from "../../auth/useAuthContext"; // Usamos el contexto de autenticación para el token
-import Footer from "./../../fragments/Footer";
-import Navbar from "./../../fragments/Navbar";
+import { getAccessToken } from "../../auth/AuthService";
+import BackButton from "../../fragments/BackButton";
 
 const RegisterUser = () => {
   const navigate = useNavigate();
-  const { role } = useAuthContext(); // Usamos el contexto para validar si el usuario tiene el rol adecuado
-  const token = localStorage.getItem("token"); // Obtener token del almacenamiento local
-
   const [formData, setFormData] = useState({
+    userName: "",
     email: "",
     password: "",
-    role: "OPERATOR", // Valor predeterminado, se puede seleccionar otro en el formulario
+    role: "OPERATOR",
   });
-
   const [error, setError] = useState("");
+  const [successMessage, setSuccessMessage] = useState(""); // Estado para el mensaje de éxito
 
-  // Maneja el cambio en los inputs del formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -27,41 +23,59 @@ const RegisterUser = () => {
     }));
   };
 
-  // Enviar datos del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const token = getAccessToken();
 
-    if (role !== "ADMIN") {
-      setError("No tienes permisos para registrar un usuario.");
+    if (!token) {
+      setError("No estás autenticado. Por favor, inicia sesión.");
       return;
     }
 
     try {
-      // Llamada al backend para registrar al usuario
       await axios.post(
         "http://localhost:8080/api/user-dashboard/register-user",
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`, // Pasar el token al backend
+            Authorization: `Bearer ${token}`,
           },
         }
       );
-
-      navigate("/admin"); // Redirige al dashboard después del registro
+      setSuccessMessage("¡Usuario registrado exitosamente!"); // Mostrar el mensaje de éxito
+      setTimeout(() => {
+        navigate("/user-list"); // Redirigir después de 2 segundos
+      }, 3000);
     } catch (error) {
       console.error("Error al registrar usuario:", error);
-      setError("No se pudo registrar el usuario. Verifica los datos.");
+      setError(
+        error.response?.data ||
+          "No se pudo registrar el usuario. Verifica los datos."
+      );
     }
   };
 
   return (
     <>
-      <Navbar />
       <div className="container mt-5">
         <h2>Registrar Usuario</h2>
+        {successMessage && (
+          <div className="alert alert-success">{successMessage}</div>
+        )}
         {error && <div className="alert alert-danger">{error}</div>}
         <form onSubmit={handleSubmit}>
+          <div className="form-group mt-3">
+            <label>Nombre de Usuario</label>
+            <input
+              type="text"
+              name="userName"
+              className="form-control"
+              value={formData.userName || ""}
+              onChange={handleChange}
+              required
+            />
+          </div>
+
           <div className="form-group">
             <label>Email</label>
             <input
@@ -73,7 +87,6 @@ const RegisterUser = () => {
               required
             />
           </div>
-
           <div className="form-group mt-3">
             <label>Contraseña</label>
             <input
@@ -85,7 +98,6 @@ const RegisterUser = () => {
               required
             />
           </div>
-
           <div className="form-group mt-3">
             <label>Rol</label>
             <select
@@ -98,13 +110,12 @@ const RegisterUser = () => {
               <option value="ADMIN">Admin</option>
             </select>
           </div>
-
           <button type="submit" className="btn btn-primary mt-4">
             Registrar
           </button>
         </form>
       </div>
-      <Footer />
+      <BackButton />
     </>
   );
 };

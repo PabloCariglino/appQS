@@ -1,11 +1,8 @@
-import Footer from "../fragments/Footer";
-import Navbar from "../fragments/Navbar";
 import styles from "./Home.module.css";
 
 const Home = () => {
   return (
     <div className={styles.home}>
-      <Navbar />
       <div className={styles.content}>
         <header className={styles.header}>
           <div className={styles["text-container"]}>
@@ -67,7 +64,6 @@ const Home = () => {
           </p>
         </section>
       </main>
-      <Footer />
     </div>
   );
 };
