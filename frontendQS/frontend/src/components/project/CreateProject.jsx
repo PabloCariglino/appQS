@@ -1,7 +1,8 @@
-import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
 import BackButton from "../../fragments/BackButton";
+import CustomPartService from "../../services/CustomPartService";
+import PartMaterialService from "../../services/PartMaterialService";
 import ProjectService from "../../services/ProjectService";
 import styles from "./CreateProject.module.css";
 
@@ -29,15 +30,16 @@ function CreateProject() {
   const [materialOptions, setMaterialOptions] = useState([]);
   const [error, setError] = useState(null);
 
+  // Cargar opciones de piezas y materiales
   useEffect(() => {
     const fetchOptions = async () => {
       try {
-        const [customPartsResponse, materialsResponse] = await Promise.all([
-          axios.get("http://localhost:8080/api/customParts"),
-          axios.get("http://localhost:8080/api/partMaterials"),
+        const [customParts, materials] = await Promise.all([
+          CustomPartService.fetchCustomParts(),
+          PartMaterialService.fetchPartMaterials(),
         ]);
-        setCustomPartOptions(customPartsResponse.data);
-        setMaterialOptions(materialsResponse.data);
+        setCustomPartOptions(customParts);
+        setMaterialOptions(materials);
       } catch (error) {
         setError("Error al cargar las opciones de piezas y materiales.");
         console.error("Error fetching options:", error);
@@ -147,7 +149,7 @@ function CreateProject() {
                 <th>Largo (mm)</th>
                 <th>Alto (mm)</th>
                 <th>Ancho (mm)</th>
-                <th>Observaciones</th>
+                {/* <th>Observaciones</th> */}
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -155,23 +157,22 @@ function CreateProject() {
               {project.pieces.map((piece, index) => (
                 <tr key={index}>
                   <td>
-                    {
-                      customPartOptions.find((p) => p.id === piece.customPartId)
-                        ?.customPart
-                    }
+                    {customPartOptions.find(
+                      (p) => p.id.toString() === piece.customPartId.toString()
+                    )?.customPart || "No definido"}
                   </td>
                   <td>
-                    {
-                      materialOptions.find((m) => m.id === piece.partMaterialId)
-                        ?.materialName
-                    }
+                    {materialOptions.find(
+                      (m) => m.id.toString() === piece.partMaterialId.toString()
+                    )?.materialName || "No definido"}
                   </td>
+
                   <td>{piece.totalweightKg}</td>
                   <td>{piece.sheetThicknessMm}</td>
                   <td>{piece.lengthPiecesMm}</td>
                   <td>{piece.heightMm}</td>
                   <td>{piece.widthMm}</td>
-                  <td>{piece.observations}</td>
+                  {/* <td>{piece.observations}</td> */}
                   <td>
                     <button
                       type="button"
@@ -286,7 +287,7 @@ function CreateProject() {
                     className={styles.inputText}
                   />
                 </td>
-                <td>
+                {/* <td>
                   <input
                     type="text"
                     value={newPiece.observations}
@@ -296,7 +297,7 @@ function CreateProject() {
                     placeholder="Observaciones"
                     className={styles.inputText}
                   />
-                </td>
+                </td> */}
                 <td>
                   <button
                     type="button"

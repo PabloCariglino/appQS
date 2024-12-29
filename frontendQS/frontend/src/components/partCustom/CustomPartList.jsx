@@ -25,7 +25,7 @@ const CustomPartList = () => {
 
       try {
         const response = await axios.get(
-          "http://localhost:8080/api/customParts",
+          "http://localhost:8080/api/customParts/custom-part-list",
           {
             headers: {
               Authorization: `Bearer ${token}`,

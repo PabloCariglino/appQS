@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { getAccessToken } from "../../auth/AuthService";
 import BackButton from "../../fragments/BackButton";
 import ProjectService from "../../services/ProjectService";
 
@@ -11,9 +12,21 @@ const ProjectDetail = () => {
 
   useEffect(() => {
     const fetchProject = async () => {
+      const token = getAccessToken();
+
+      if (!token) {
+        setError("No estás autenticado. Por favor, inicia sesión.");
+        setLoading(false);
+        return;
+      }
+
       try {
-        const data = await ProjectService.fetchProjectById(id);
-        setProject(data);
+        const response = await ProjectService.fetchProjectById(id, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        setProject(response);
       } catch (err) {
         setError(
           "Error al obtener los detalles del proyecto. Verifica tu conexión o permisos."

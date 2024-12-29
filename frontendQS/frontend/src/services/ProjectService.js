@@ -1,5 +1,6 @@
 // ProjectService.js
 import axios from "axios";
+import { getAccessToken } from "../auth/AuthService";
 
 // Configuración base de Axios para proyectos
 const API_URL = "http://localhost:8080/api/project";
@@ -10,18 +11,19 @@ const instance = axios.create({
 // Interceptor para agregar el token JWT a todas las solicitudes
 instance.interceptors.request.use(
   (config) => {
-    const token = sessionStorage.getItem("token"); // Cambia a sessionStorage
+    const token = getAccessToken(); // Usar getAccessToken() en lugar de sessionStorage
     if (token) {
-      console.log("Interceptor: Token recuperado de sessionStorage:", token);
-      config.headers.Authorization = `Bearer ${token}`; // Agrega el token a los encabezados
+      config.headers["Authorization"] = `Bearer ${token}`; // Agrega el token al encabezado
+      console.log("Token enviado en la solicitud:", token); // Log para verificar el token
     } else {
-      console.warn("Interceptor: No se encontró token en sessionStorage");
+      console.warn("Token no disponible para la solicitud.");
     }
-    console.log("Request headers:", config.headers);
-
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error("Error en el interceptor de la solicitud:", error);
+    return Promise.reject(error);
+  }
 );
 
 // Funciones de servicio para interactuar con el backend
@@ -29,25 +31,28 @@ const ProjectService = {
   // Obtener todos los proyectos
   fetchProjects: async () => {
     console.log("fetchProjects: Realizando llamada al backend...");
-    return await handleServiceCall(() => instance.get("/projects-list"));
+    return await handleServiceCall(() => instance.get("/list")); // Cambiado a "/list"
   },
 
   // Obtener un proyecto por ID
   fetchProjectById: async (id) => {
+    console.log(`fetchProjectById: Solicitando proyecto con ID: ${id}`);
     return await handleServiceCall(() => instance.get(`/${id}`));
   },
 
   // Actualizar un proyecto
   updateProjectById: async (id, projectData) => {
-    return await handleServiceCall(() =>
-      instance.put(`/projects-update/${id}`, projectData)
+    console.log(`updateProjectById: Actualizando proyecto con ID: ${id}`);
+    return await handleServiceCall(
+      () => instance.put(`/${id}/update`, projectData) // Cambiado a "/{id}/update"
     );
   },
 
   // Crear un nuevo proyecto
   createNewProject: async (newProject) => {
-    return await handleServiceCall(() =>
-      instance.post("/projects-create", newProject)
+    console.log("createNewProject: Creando un nuevo proyecto...");
+    return await handleServiceCall(
+      () => instance.post("/create", newProject) // Cambiado a "/create"
     );
   },
 };
@@ -64,7 +69,7 @@ const handleServiceCall = async (apiCall) => {
     return {
       success: false,
       message:
-        error.response?.data?.message || error.message || "Unknown error",
+        error.response?.data?.message || error.message || "Error desconocido",
     };
   }
 };

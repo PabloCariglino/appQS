@@ -1,7 +1,8 @@
+import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { getAccessToken } from "../../auth/AuthService";
 import BackButton from "../../fragments/BackButton";
-import projectService from "../../services/ProjectService";
 
 const ProjectEdit = () => {
   const { id } = useParams();
@@ -11,9 +12,23 @@ const ProjectEdit = () => {
 
   useEffect(() => {
     const fetchProject = async () => {
+      const token = getAccessToken();
+
+      if (!token) {
+        setError("No estás autenticado. Por favor, inicia sesión.");
+        return;
+      }
+
       try {
-        const data = await projectService.fetchProjectById(id);
-        setProject(data);
+        const response = await axios.get(
+          `http://localhost:8080/api/project/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        setProject(response.data);
       } catch (error) {
         setError("Error al obtener los datos del proyecto.");
         console.error("Error fetching project data:", error);
@@ -29,8 +44,23 @@ const ProjectEdit = () => {
       return;
     }
 
+    const token = getAccessToken();
+
+    if (!token) {
+      setError("No estás autenticado. Por favor, inicia sesión.");
+      return;
+    }
+
     try {
-      await projectService.updateProjectById(id, project);
+      await axios.put(
+        `http://localhost:8080/api/project/${id}/update`,
+        project,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       alert("Proyecto actualizado con éxito.");
       navigate(`/projects/${id}`);
     } catch (error) {

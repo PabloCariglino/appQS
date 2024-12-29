@@ -19,5 +19,8 @@ public interface PartRepository extends JpaRepository<Part, UUID> {
     Optional<Part> findByQrCodeData(String qrCodeData);
 
     List<Part> findByProjectId(Long projectId); // Método para encontrar partes por ID de proyecto
+
+    
+
 }
 

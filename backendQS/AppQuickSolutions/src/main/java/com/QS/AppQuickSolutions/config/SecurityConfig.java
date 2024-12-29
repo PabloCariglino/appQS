@@ -39,8 +39,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/api/auth/**", "/", "/login", "/static/**").permitAll()
                 .requestMatchers("/api/part/**", "/api/project/**", "/api/project/projects-list").hasAnyRole("ADMIN", "OPERATOR")
-                .requestMatchers("/api/project/projects-list", "/api/project/create", "/api/events/**","/api/part-materials/**",
-                "/api/customParts/**").hasRole("ADMIN")
+                .requestMatchers("/api/project/projects/list", "/api/project/create", "/api/events/**","/api/part-materials/**",
+                "/api/customParts/**","/api/part/**").hasRole("ADMIN")
                 .requestMatchers("/api/user-dashboard/**").authenticated()
                 .requestMatchers("/uploads/**").permitAll()
                 .anyRequest().authenticated()

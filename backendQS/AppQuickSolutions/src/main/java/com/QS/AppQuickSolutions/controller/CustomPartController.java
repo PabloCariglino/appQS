@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,20 +27,22 @@ public class CustomPartController {
     public CustomPartController(CustomPartService customPartService) {
         this.customPartService = customPartService;
     }
-
-    @GetMapping
+    
+    // @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/custom-part-list")
     public ResponseEntity<List<CustomPart>> getAllCustomParts() {
         List<CustomPart> parts = customPartService.getAllCustomParts();
         return ResponseEntity.ok(parts);
     }
 
+    // @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<CustomPart> getCustomPartById(@PathVariable Long id) {
         CustomPart part = customPartService.getCustomPartById(id);
         return ResponseEntity.ok(part);
     }
 
-   @PreAuthorize("hasRole('ADMIN')")
+   //@PreAuthorize("hasRole('ADMIN')")
    @PostMapping
    public ResponseEntity<CustomPart> createCustomPart(
         @RequestParam(value = "customPart", required = false) String customPartName,
@@ -56,7 +57,7 @@ public class CustomPartController {
 }
 
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public CustomPart updateCustomPart(@PathVariable Long id,
                                    @RequestParam(value = "customPart", required = false) String customPartName,
@@ -65,14 +66,14 @@ public class CustomPartController {
 }
 
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCustomPart(@PathVariable Long id) {
         customPartService.deleteCustomPart(id);
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    // @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/upload-image")
     public ResponseEntity<CustomPart> uploadImage(@PathVariable Long id, @RequestParam("image") MultipartFile image) throws IOException {
         CustomPart updatedPart = customPartService.uploadImage(id, image);

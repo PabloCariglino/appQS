@@ -100,6 +100,7 @@ public class ProjectController {
 
     private ProjectDto convertToDto(Project project) {
         ProjectDto dto = new ProjectDto();
+        dto.setId(project.getId()); // Agregar el ID del proyecto
         dto.setProjectName(project.getProjectName());
         dto.setClientAlias(project.getClientAlias());
         dto.setContact(project.getContact());
@@ -118,4 +119,5 @@ public class ProjectController {
         }).collect(Collectors.toList()));
         return dto;
     }
+    
 }

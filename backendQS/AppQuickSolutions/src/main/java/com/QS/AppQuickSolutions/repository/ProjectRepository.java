@@ -17,5 +17,8 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByClientAlias(String clientAlias);
 
     
+
+
+    
 }
 

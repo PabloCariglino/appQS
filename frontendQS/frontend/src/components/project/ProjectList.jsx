@@ -2,6 +2,7 @@ import { useContext, useEffect, useState } from "react";
 import { Button, Container, Table } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../auth/AuthContext";
+import { getAccessToken } from "../../auth/AuthService";
 import BackButton from "../../fragments/BackButton";
 import ProjectService from "../../services/ProjectService";
 import styles from "./ProjectList.module.css";
@@ -14,12 +15,24 @@ const ProjectList = () => {
 
   useEffect(() => {
     const fetchProjects = async () => {
+      const token = getAccessToken();
+
+      if (!token) {
+        setError("No estás autenticado. Por favor, inicia sesión.");
+        return;
+      }
+
       try {
         console.log("Solicitando lista de proyectos...");
-        const { success, data } = await ProjectService.fetchProjects();
-        if (success) {
-          console.log("Lista de proyectos recibida:", data);
-          setProjects(data);
+        const response = await ProjectService.fetchProjects({
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.success) {
+          console.log("Lista de proyectos recibida:", response.data);
+          setProjects(response.data);
         } else {
           setError("Error al cargar los proyectos.");
         }
@@ -99,7 +112,7 @@ const ProjectList = () => {
                   <td>{project.id}</td>
                   <td>{project.projectName}</td>
                   <td>{project.clientAlias}</td>
-                  <td>{project.state ? "Finalizado" : "En proceso"}</td>
+                  <td>{project.state ? "En proceso" : "Finalizado"}</td>
                   <td>{project.parts ? project.parts.length : 0}</td>
                   {role === "ADMIN" && <td>{project.contact}</td>}
                 </tr>

@@ -22,7 +22,7 @@ const PartMaterialList = () => {
 
       try {
         const response = await axios.get(
-          "http://localhost:8080/api/part-materials",
+          "http://localhost:8080/api/part-materials/material-list",
           {
             headers: {
               Authorization: `Bearer ${token}`,

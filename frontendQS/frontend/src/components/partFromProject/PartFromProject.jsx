@@ -2,6 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { Container, Table } from "react-bootstrap";
 import { useParams } from "react-router-dom";
+import { getAccessToken } from "../../auth/AuthService";
 import BackButton from "../../fragments/BackButton";
 
 const PartFromProject = () => {
@@ -12,9 +13,22 @@ const PartFromProject = () => {
 
   useEffect(() => {
     const fetchParts = async () => {
+      const token = getAccessToken();
+
+      if (!token) {
+        setError("No estás autenticado. Por favor, inicia sesión.");
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await axios.get(
-          `http://localhost:8080/api/project/${projectId}/parts`
+          `http://localhost:8080/api/project/${projectId}/parts`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
         );
         setParts(response.data);
       } catch (err) {
