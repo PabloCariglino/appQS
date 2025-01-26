@@ -1,7 +1,11 @@
 package com.QS.AppQuickSolutions.dto;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 import com.QS.AppQuickSolutions.entity.CustomPart;
 import com.QS.AppQuickSolutions.entity.PartMaterial;
+import com.QS.AppQuickSolutions.enums.PartState;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,6 +20,7 @@ import lombok.Setter;
 @Setter
 public class PartDto {
 
+    private UUID id;
     private CustomPart customPart;
     private PartMaterial partMaterial;
     private Double totalweightKg;
@@ -23,7 +28,13 @@ public class PartDto {
     private Double lengthPiecesMm;
     private Double heightMm;
     private Double widthMm;
-    private Boolean receptionState;
-    private Boolean qualityControlState;
-    private String observations;
+    private String qrCodeData; //Guarda el QR asociado
+    private String qrCodeFilePath; //Guarda la URL o el path de la imagen del QR
+    
+    private LocalDateTime scanDateTime; //Fecha y hora de escaneao de recepcion de pieza
+    private Boolean qualityControlState; //Control de calidad de pieza
+
+    private PartState partState;
+
+    private String observations; //Observaciones
 }

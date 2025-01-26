@@ -27,18 +27,29 @@ public class PartService {
 
     public Part createPart(Project project, PartDto partDto) throws IOException, WriterException {
         validatePartDto(partDto);
-
+    
         Part part = new Part();
         part.setProject(project);
         populatePartData(part, partDto);
-
+        
+        // Log para ver los datos de la pieza antes de persistir
+        System.out.println("Creando pieza con datos: " + part.toString());
+    
         // Generar código QR
         String qrData = generateQrData(part);
         String qrFilePath = qrCodeService.generateQRCodeImage(qrData, 300, 300, UUID.randomUUID() + "_part_qr.png");
         part.setQrCodeFilePath(qrFilePath);
-
-        return partRepository.save(part);
+    
+        // Verifica que la pieza tenga todos los datos
+        System.out.println("Datos de la pieza después de agregar QR: " + part.toString());
+    
+        // Guardar la pieza y verificar si se guarda correctamente
+        Part savedPart = partRepository.save(part);
+        System.out.println("Pieza guardada con ID: " + savedPart.getId());
+    
+        return savedPart;
     }
+    
 
     public Part updatePart(UUID id, PartDto partDto) throws IOException, WriterException {
         validatePartDto(partDto);
@@ -67,13 +78,6 @@ public class PartService {
                 .orElseThrow(() -> new EntityNotFoundException("Pieza no encontrada con ID: " + id));
     }
 
-    public Part scanPart(UUID id) {
-        Part part = getPartById(id);
-        part.setReceptionState(true);
-        part.setScanDateTime(LocalDateTime.now());
-        return partRepository.save(part);
-    }
-
     public void deletePart(UUID id) {
         if (!partRepository.existsById(id)) {
             throw new EntityNotFoundException("Pieza no encontrada con ID: " + id);
@@ -100,8 +104,14 @@ public class PartService {
         part.setLengthPiecesMm(partDto.getLengthPiecesMm());
         part.setHeightMm(partDto.getHeightMm());
         part.setWidthMm(partDto.getWidthMm());
+        part.setQrCodeData(partDto.getQrCodeData());
+        part.setQrCodeFilePath(partDto.getQrCodeFilePath());
+        part.setScanDateTime(partDto.getScanDateTime());
+        part.setQualityControlState(partDto.getQualityControlState());
+        part.setPartState(partDto.getPartState());
         part.setObservations(partDto.getObservations());
     }
+
 
     // Verificar si los datos relevantes del QR cambiaron
     private boolean isQrDataChanged(Part part, PartDto partDto) {
@@ -112,8 +122,14 @@ public class PartService {
     // Generar datos del QR basados en la pieza
     private String generateQrData(Part part) {
         return "Part ID: " + part.getId() +
-                "\nProject: " + part.getProject().getProjectName() +
                 "\nCustomPart: " + part.getCustomPart().getCustomPart() +
                 "\nMaterial: " + part.getPartMaterial().getMaterialName();
+    }
+
+    public Part scanPart(UUID id) {
+        Part part = getPartById(id);
+        part.setReceptionState(true);
+        part.setScanDateTime(LocalDateTime.now());
+        return partRepository.save(part);
     }
 }

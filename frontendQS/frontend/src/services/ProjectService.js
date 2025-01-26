@@ -1,4 +1,3 @@
-// ProjectService.js
 import axios from "axios";
 import { getAccessToken } from "../auth/AuthService";
 
@@ -27,11 +26,19 @@ instance.interceptors.request.use(
 );
 
 // Funciones de servicio para interactuar con el backend
+
 const ProjectService = {
+  // Crear un nuevo proyecto con las piezas
+  createNewProject: async (projectDto, partDtos) => {
+    console.log("createNewProject: Creando un nuevo proyecto...");
+    const data = { project: projectDto, parts: partDtos };
+    return await handleServiceCall(() => instance.post("/create", data));
+  },
+
   // Obtener todos los proyectos
   fetchProjects: async () => {
     console.log("fetchProjects: Realizando llamada al backend...");
-    return await handleServiceCall(() => instance.get("/list")); // Cambiado a "/list"
+    return await handleServiceCall(() => instance.get("/list"));
   },
 
   // Obtener un proyecto por ID
@@ -43,16 +50,8 @@ const ProjectService = {
   // Actualizar un proyecto
   updateProjectById: async (id, projectData) => {
     console.log(`updateProjectById: Actualizando proyecto con ID: ${id}`);
-    return await handleServiceCall(
-      () => instance.put(`/${id}/update`, projectData) // Cambiado a "/{id}/update"
-    );
-  },
-
-  // Crear un nuevo proyecto
-  createNewProject: async (newProject) => {
-    console.log("createNewProject: Creando un nuevo proyecto...");
-    return await handleServiceCall(
-      () => instance.post("/create", newProject) // Cambiado a "/create"
+    return await handleServiceCall(() =>
+      instance.put(`/${id}/update`, projectData)
     );
   },
 };

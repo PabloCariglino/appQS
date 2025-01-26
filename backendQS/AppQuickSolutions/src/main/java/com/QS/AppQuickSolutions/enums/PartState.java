@@ -1,0 +1,14 @@
+package com.QS.AppQuickSolutions.enums;
+
+public enum PartState {
+
+    DEVOLUCION_FUERA_DE_MEDIDA,
+    FALTANTE,
+    CONFECCIONADO,
+    PINTADO,
+    REPINTANDO_POR_GOLPE_O_RAYON,
+    EMBALADO,
+    EN_DEPOSITO,
+    DESPACHADO,
+    REPARACION_PENDIENTE;
+}

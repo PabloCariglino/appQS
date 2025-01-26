@@ -1,17 +1,20 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
+import { getAccessToken } from "../../auth/AuthService"; // Importar getAccessToken
 import BackButton from "../../fragments/BackButton";
 import CustomPartService from "../../services/CustomPartService";
 import PartMaterialService from "../../services/PartMaterialService";
 import ProjectService from "../../services/ProjectService";
+import QRCodeService from "../../services/QRCodeService";
 import styles from "./CreateProject.module.css";
 
 function CreateProject() {
   const [project, setProject] = useState({
-    projectName: "",
     clientAlias: "",
     contact: "",
     state: true,
+    visitDateTime: "",
+    installationDateTime: "",
     pieces: [],
   });
 
@@ -24,6 +27,7 @@ function CreateProject() {
     heightMm: "",
     widthMm: "",
     observations: "",
+    qrCodeFilePath: "",
   });
 
   const [customPartOptions, setCustomPartOptions] = useState([]);
@@ -48,47 +52,144 @@ function CreateProject() {
     fetchOptions();
   }, []);
 
-  const handleAddPiece = () => {
+  // Función para obtener la imagen del QR
+  const getQRCodeImage = async (filename) => {
+    try {
+      const token = getAccessToken(); // Obtener el token JWT
+      const response = await fetch(
+        `http://localhost:8080/qr-codes/${filename}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // Incluir el token en el encabezado
+          },
+        }
+      );
+
+      if (response.ok) {
+        return response.url; // Devolver la URL de la imagen
+      } else {
+        throw new Error("Error al cargar la imagen del QR");
+      }
+    } catch (error) {
+      console.error("Error al obtener la imagen del QR:", error);
+      throw error;
+    }
+  };
+
+  const handleAddPiece = async () => {
     if (!newPiece.customPartId || !newPiece.partMaterialId) {
       alert("Por favor, seleccione una pieza y un material.");
       return;
     }
 
-    setProject((prev) => ({
-      ...prev,
-      pieces: [...prev.pieces, { ...newPiece }],
-    }));
+    try {
+      // Crear un objeto PartDto con los datos de la pieza
+      const partDto = {
+        customPart: { id: newPiece.customPartId },
+        partMaterial: { id: newPiece.partMaterialId },
+        totalweightKg: newPiece.totalweightKg,
+        sheetThicknessMm: newPiece.sheetThicknessMm,
+        lengthPiecesMm: newPiece.lengthPiecesMm,
+        heightMm: newPiece.heightMm,
+        widthMm: newPiece.widthMm,
+        observations: newPiece.observations,
+      };
 
-    setNewPiece({
-      customPartId: "",
-      partMaterialId: "",
-      totalweightKg: "",
-      sheetThicknessMm: "",
-      lengthPiecesMm: "",
-      heightMm: "",
-      widthMm: "",
-      observations: "",
-    });
+      console.log("Enviando datos al backend para generar QR:", partDto);
+
+      // Enviar los datos de la pieza al backend para generar el QR
+      const response = await QRCodeService.generateQRCode(partDto);
+
+      console.log("Respuesta del backend:", response);
+
+      // Verificar si la respuesta es exitosa y contiene la propiedad filePath
+      if (response.success && response.data.filePath) {
+        const qrCodeFilePath = response.data.filePath;
+
+        console.log("Ruta del archivo QR recibida:", qrCodeFilePath);
+
+        // Agregar la pieza al proyecto con el QR generado
+        setProject((prev) => ({
+          ...prev,
+          pieces: [...prev.pieces, { ...newPiece, qrCodeFilePath }],
+        }));
+
+        // Limpiar los campos de la nueva pieza
+        setNewPiece({
+          customPartId: "",
+          partMaterialId: "",
+          totalweightKg: "",
+          sheetThicknessMm: "",
+          lengthPiecesMm: "",
+          heightMm: "",
+          widthMm: "",
+          observations: "",
+          qrCodeFilePath: "",
+        });
+      } else {
+        setError(
+          "Error al generar el código QR: Respuesta inesperada del servidor."
+        );
+      }
+    } catch (error) {
+      console.error("Error generating QR:", error);
+      setError("Error al generar el código QR.");
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!project.projectName || !project.clientAlias || !project.contact) {
+    if (
+      !project.clientAlias ||
+      !project.contact ||
+      !project.visitDateTime ||
+      !project.installationDateTime
+    ) {
       alert("Por favor, complete todos los campos obligatorios.");
       return;
     }
 
     try {
-      await ProjectService.createNewProject(project);
-      alert("¡Proyecto creado con éxito!");
-      setProject({
-        projectName: "",
-        clientAlias: "",
-        contact: "",
-        state: true,
-        pieces: [],
-      });
+      // Asegúrate de enviar el proyecto con las piezas como un JSON
+      const projectDto = {
+        clientAlias: project.clientAlias,
+        contact: project.contact,
+        state: project.state,
+        visitDateTime: project.visitDateTime,
+        installationDateTime: project.installationDateTime,
+      };
+
+      // Transformar las piezas en DTO
+      const partDtos = project.pieces.map((piece) => ({
+        customPart: { id: piece.customPartId },
+        partMaterial: { id: piece.partMaterialId },
+        totalweightKg: piece.totalweightKg,
+        sheetThicknessMm: piece.sheetThicknessMm,
+        lengthPiecesMm: piece.lengthPiecesMm,
+        heightMm: piece.heightMm,
+        widthMm: piece.widthMm,
+        observations: piece.observations,
+      }));
+
+      // Llamar al backend para crear el proyecto con las piezas
+      const response = await ProjectService.createNewProject(
+        projectDto,
+        partDtos
+      );
+      if (response.success) {
+        alert("¡Proyecto creado con éxito!");
+        setProject({
+          clientAlias: "",
+          contact: "",
+          state: true,
+          visitDateTime: "",
+          installationDateTime: "",
+          pieces: [],
+        });
+      } else {
+        setError("Error al crear el proyecto");
+      }
     } catch (error) {
       setError("Error al crear el proyecto. Por favor, intenta de nuevo.");
       console.error("Error al crear el proyecto:", error);
@@ -101,20 +202,9 @@ function CreateProject() {
         <h1 className={styles.title}>Crear Proyecto</h1>
         {error && <div className="alert alert-danger">{error}</div>}
         <form onSubmit={handleSubmit} className={styles.form}>
+          {/* Campos del proyecto */}
           <div>
-            <label>Nombre del Proyecto</label>
-            <input
-              type="text"
-              value={project.projectName}
-              onChange={(e) =>
-                setProject({ ...project, projectName: e.target.value })
-              }
-              required
-              className={styles.inputText}
-            />
-          </div>
-          <div>
-            <label>Alias del Cliente</label>
+            <label>Cliente</label>
             <input
               type="text"
               value={project.clientAlias}
@@ -137,7 +227,32 @@ function CreateProject() {
               className={styles.inputText}
             />
           </div>
+          <div>
+            <label>Fecha de Visita</label>
+            <input
+              type="datetime-local"
+              value={project.visitDateTime}
+              onChange={(e) =>
+                setProject({ ...project, visitDateTime: e.target.value })
+              }
+              required
+              className={styles.inputDatetime}
+            />
+          </div>
+          <div>
+            <label>Fecha de Instalación estimada</label>
+            <input
+              type="datetime-local"
+              value={project.installationDateTime}
+              onChange={(e) =>
+                setProject({ ...project, installationDateTime: e.target.value })
+              }
+              required
+              className={styles.inputDatetime}
+            />
+          </div>
 
+          {/* Tabla de piezas */}
           <h3>Piezas</h3>
           <table className={`table table-bordered ${styles.table}`}>
             <thead>
@@ -149,8 +264,7 @@ function CreateProject() {
                 <th>Largo (mm)</th>
                 <th>Alto (mm)</th>
                 <th>Ancho (mm)</th>
-                {/* <th>Observaciones</th> */}
-                <th>Acciones</th>
+                <th>QR</th>
               </tr>
             </thead>
             <tbody>
@@ -166,26 +280,20 @@ function CreateProject() {
                       (m) => m.id.toString() === piece.partMaterialId.toString()
                     )?.materialName || "No definido"}
                   </td>
-
                   <td>{piece.totalweightKg}</td>
                   <td>{piece.sheetThicknessMm}</td>
                   <td>{piece.lengthPiecesMm}</td>
                   <td>{piece.heightMm}</td>
                   <td>{piece.widthMm}</td>
-                  {/* <td>{piece.observations}</td> */}
                   <td>
-                    <button
-                      type="button"
-                      className="btn btn-danger"
-                      onClick={() =>
-                        setProject((prev) => ({
-                          ...prev,
-                          pieces: prev.pieces.filter((_, i) => i !== index),
-                        }))
-                      }
-                    >
-                      Eliminar
-                    </button>
+                    {piece.qrCodeFilePath && (
+                      <img
+                        src={getQRCodeImage(piece.qrCodeFilePath)} // Usar la función getQRCodeImage
+                        alt="QR Code"
+                        width="50"
+                        height="50"
+                      />
+                    )}
                   </td>
                 </tr>
               ))}
@@ -234,7 +342,7 @@ function CreateProject() {
                       })
                     }
                     placeholder="Peso Total (kg)"
-                    className={styles.inputText}
+                    className={styles.inputNumber}
                   />
                 </td>
                 <td>
@@ -248,7 +356,7 @@ function CreateProject() {
                       })
                     }
                     placeholder="Espesor (mm)"
-                    className={styles.inputText}
+                    className={styles.inputNumber}
                   />
                 </td>
                 <td>
@@ -262,7 +370,7 @@ function CreateProject() {
                       })
                     }
                     placeholder="Largo (mm)"
-                    className={styles.inputText}
+                    className={styles.inputNumber}
                   />
                 </td>
                 <td>
@@ -273,7 +381,7 @@ function CreateProject() {
                       setNewPiece({ ...newPiece, heightMm: e.target.value })
                     }
                     placeholder="Alto (mm)"
-                    className={styles.inputText}
+                    className={styles.inputNumber}
                   />
                 </td>
                 <td>
@@ -284,36 +392,27 @@ function CreateProject() {
                       setNewPiece({ ...newPiece, widthMm: e.target.value })
                     }
                     placeholder="Ancho (mm)"
-                    className={styles.inputText}
+                    className={styles.inputNumber}
                   />
                 </td>
-                {/* <td>
-                  <input
-                    type="text"
-                    value={newPiece.observations}
-                    onChange={(e) =>
-                      setNewPiece({ ...newPiece, observations: e.target.value })
-                    }
-                    placeholder="Observaciones"
-                    className={styles.inputText}
-                  />
-                </td> */}
                 <td>
                   <button
                     type="button"
                     className="btn btn-primary"
                     onClick={handleAddPiece}
                   >
-                    Agregar
+                    Agregar Pieza
                   </button>
                 </td>
               </tr>
             </tbody>
           </table>
 
-          <button type="submit" className="btn btn-success">
-            Crear Proyecto
-          </button>
+          <div className="text-center mt-3">
+            <button type="submit" className="btn btn-success">
+              Crear Proyecto
+            </button>
+          </div>
         </form>
       </div>
       <BackButton />

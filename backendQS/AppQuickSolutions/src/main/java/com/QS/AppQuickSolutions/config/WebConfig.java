@@ -12,5 +12,10 @@ public class WebConfig implements WebMvcConfigurer {
         // Configuración para servir la carpeta uploads como recurso estático
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations("file:src/main/resources/uploads/");
+
+
+       // Agregar configuración para los códigos QR
+        registry.addResourceHandler("/qr-codes/**")
+        .addResourceLocations("file:src/main/resources/qr-codes/");
     }
 }

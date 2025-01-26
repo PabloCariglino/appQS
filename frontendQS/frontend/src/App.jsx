@@ -17,6 +17,7 @@ import OperatorDashboard from "./pages/OperatorDashboard";
 
 import PartMaterialList from "./components/material/PartMaterialList";
 import CustomPartList from "./components/partCustom/CustomPartList";
+import ProjectDetail from "./components/project/ProjectDetail";
 
 const App = () => {
   const { isLoggedIn, role, setRole, setIsLoggedIn } = useAuthContext();
@@ -140,6 +141,16 @@ const App = () => {
           element={
             isLoggedIn && role === "ADMIN" ? (
               <CreateProject />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+        <Route
+          path="/project-detail"
+          element={
+            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
+              <ProjectDetail />
             ) : (
               <Navigate to="/" />
             )

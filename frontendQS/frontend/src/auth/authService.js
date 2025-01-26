@@ -40,6 +40,7 @@ export const isAuthenticated = () => {
   const token = getAccessToken();
   return !!token;
 };
+
 export const getRoleFromToken = () => {
   const token = getAccessToken();
   if (!token) return null;

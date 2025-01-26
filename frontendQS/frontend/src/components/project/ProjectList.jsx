@@ -9,7 +9,10 @@ import styles from "./ProjectList.module.css";
 
 const ProjectList = () => {
   const [projects, setProjects] = useState([]);
+  const [filteredProjects, setFilteredProjects] = useState([]);
   const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState(null);
   const navigate = useNavigate();
   const { role } = useContext(AuthContext);
 
@@ -33,6 +36,7 @@ const ProjectList = () => {
         if (response.success) {
           console.log("Lista de proyectos recibida:", response.data);
           setProjects(response.data);
+          setFilteredProjects(response.data); // Inicializa el filtro
         } else {
           setError("Error al cargar los proyectos.");
         }
@@ -57,6 +61,56 @@ const ProjectList = () => {
   const handleCreateProject = () => navigate("/create-project");
   const handlePartCustomList = () => navigate("/PartCustom-list");
   const handleMaterialList = () => navigate("/material-list");
+
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    if (value === "") {
+      setFilteredProjects(projects); // Reset the filter when search is cleared
+    } else {
+      setFilteredProjects(
+        projects.filter((project) =>
+          Object.values(project).some((val) =>
+            String(val).toLowerCase().includes(value.toLowerCase())
+          )
+        )
+      );
+    }
+  };
+
+  const handleSort = (key) => {
+    let direction = "ascending";
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === "ascending"
+    ) {
+      direction = "descending";
+    }
+
+    const sortedProjects = [...filteredProjects].sort((a, b) => {
+      if (
+        key === "createdDate" ||
+        key === "visitDateTime" ||
+        key === "installationDateTime"
+      ) {
+        return direction === "ascending"
+          ? new Date(a[key]) - new Date(b[key])
+          : new Date(b[key]) - new Date(a[key]);
+      }
+
+      if (typeof a[key] === "number") {
+        return direction === "ascending" ? a[key] - b[key] : b[key] - a[key];
+      }
+
+      return direction === "ascending"
+        ? a[key].localeCompare(b[key])
+        : b[key].localeCompare(a[key]);
+    });
+
+    setFilteredProjects(sortedProjects);
+    setSortConfig({ key, direction });
+  };
 
   return (
     <>
@@ -88,33 +142,58 @@ const ProjectList = () => {
             </Button>
           </div>
         </div>
+
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="Buscar proyectos..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className={styles.searchInput}
+          />
+        </div>
+
         {error ? (
           <div className="alert alert-danger">{error}</div>
         ) : (
           <Table striped bordered hover className={styles.projectTable}>
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Nombre del Proyecto</th>
-                <th>Alias del Cliente</th>
-                <th>Estado</th>
-                <th>Piezas</th>
-                {role === "ADMIN" && <th>Contacto</th>}
+                <th onClick={() => handleSort("createdDate")}>
+                  Fecha de Creación
+                </th>
+                <th onClick={() => handleSort("id")}>ID</th>
+                <th onClick={() => handleSort("clientAlias")}>
+                  Nombre del Cliente
+                </th>
+                <th onClick={() => handleSort("contact")}>Contacto</th>
+                <th onClick={() => handleSort("visitDateTime")}>
+                  Fecha de Visita
+                </th>
+                <th onClick={() => handleSort("installationDateTime")}>
+                  Fecha de Instalación
+                </th>
+                <th onClick={() => handleSort("pieces")}>Piezas</th>
+                <th onClick={() => handleSort("state")}>Estado</th>
               </tr>
             </thead>
             <tbody>
-              {projects.map((project) => (
+              {filteredProjects.map((project) => (
                 <tr
                   key={project.id}
                   onClick={() => handleProjectClick(project.id)}
                   className={styles.clickableRow}
                 >
+                  <td>{new Date(project.createdDate).toLocaleString()}</td>
                   <td>{project.id}</td>
-                  <td>{project.projectName}</td>
                   <td>{project.clientAlias}</td>
-                  <td>{project.state ? "En proceso" : "Finalizado"}</td>
+                  <td>{project.contact}</td>
+                  <td>{new Date(project.visitDateTime).toLocaleString()}</td>
+                  <td>
+                    {new Date(project.installationDateTime).toLocaleString()}
+                  </td>
                   <td>{project.parts ? project.parts.length : 0}</td>
-                  {role === "ADMIN" && <td>{project.contact}</td>}
+                  <td>{project.state ? "En proceso" : "Finalizado"}</td>
                 </tr>
               ))}
             </tbody>
