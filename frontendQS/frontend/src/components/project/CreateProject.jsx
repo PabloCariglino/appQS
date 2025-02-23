@@ -1,3 +1,4 @@
+// CreateProject.jsx (modificado)
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../../auth/AuthService"; // Importar getAccessToken
@@ -33,6 +34,7 @@ function CreateProject() {
   const [customPartOptions, setCustomPartOptions] = useState([]);
   const [materialOptions, setMaterialOptions] = useState([]);
   const [error, setError] = useState(null);
+  const [qrImageUrls, setQrImageUrls] = useState({}); // Estado para almacenar URLs de QR
 
   // Cargar opciones de piezas y materiales
   useEffect(() => {
@@ -52,6 +54,21 @@ function CreateProject() {
     fetchOptions();
   }, []);
 
+  // Cargar imágenes QR asíncronamente cuando cambian las piezas
+  useEffect(() => {
+    const loadQrImages = async () => {
+      const urls = {};
+      for (const piece of project.pieces) {
+        if (piece.qrCodeFilePath) {
+          const url = await getQRCodeImage(piece.qrCodeFilePath);
+          urls[piece.qrCodeFilePath] = url || "/placeholder-qr.png";
+        }
+      }
+      setQrImageUrls(urls);
+    };
+    loadQrImages();
+  }, [project.pieces]); // Se ejecuta cuando cambian las piezas
+
   // Función para obtener la imagen del QR
   const getQRCodeImage = async (filename) => {
     try {
@@ -66,13 +83,16 @@ function CreateProject() {
       );
 
       if (response.ok) {
-        return response.url; // Devolver la URL de la imagen
+        const blob = await response.blob(); // Obtener la imagen como Blob
+        return URL.createObjectURL(blob); // Crear una URL para el Blob
       } else {
-        throw new Error("Error al cargar la imagen del QR");
+        throw new Error(
+          `Error al cargar la imagen del QR: ${response.status} - ${response.statusText}`
+        );
       }
     } catch (error) {
       console.error("Error al obtener la imagen del QR:", error);
-      throw error;
+      return null; // Retornar null si hay error, para mostrar un placeholder
     }
   };
 
@@ -82,39 +102,50 @@ function CreateProject() {
       return;
     }
 
+    const customPart = customPartOptions.find(
+      (p) => p.id.toString() === newPiece.customPartId.toString()
+    );
+
+    const partMaterial = materialOptions.find(
+      (m) => m.id.toString() === newPiece.partMaterialId.toString()
+    );
+
+    if (!customPart || !partMaterial) {
+      alert("La pieza o el material seleccionado no es válido.");
+      return;
+    }
+
+    // Crear un objeto PartDto con los datos de la pieza, incluyendo los nombres
+    const partDto = {
+      customPart: {
+        id: customPart.id,
+        customPart: customPart.customPart, // Incluir el nombre de la pieza
+      },
+      partMaterial: {
+        id: partMaterial.id,
+        materialName: partMaterial.materialName, // Incluir el nombre del material
+      },
+      totalweightKg: parseFloat(newPiece.totalweightKg),
+      sheetThicknessMm: parseFloat(newPiece.sheetThicknessMm),
+      lengthPiecesMm: parseFloat(newPiece.lengthPiecesMm),
+      heightMm: parseFloat(newPiece.heightMm),
+      widthMm: parseFloat(newPiece.widthMm),
+      observations: newPiece.observations,
+    };
+
+    console.log("Enviando datos al backend para generar QR:", partDto);
+
     try {
-      // Crear un objeto PartDto con los datos de la pieza
-      const partDto = {
-        customPart: { id: newPiece.customPartId },
-        partMaterial: { id: newPiece.partMaterialId },
-        totalweightKg: newPiece.totalweightKg,
-        sheetThicknessMm: newPiece.sheetThicknessMm,
-        lengthPiecesMm: newPiece.lengthPiecesMm,
-        heightMm: newPiece.heightMm,
-        widthMm: newPiece.widthMm,
-        observations: newPiece.observations,
-      };
-
-      console.log("Enviando datos al backend para generar QR:", partDto);
-
-      // Enviar los datos de la pieza al backend para generar el QR
       const response = await QRCodeService.generateQRCode(partDto);
 
-      console.log("Respuesta del backend:", response);
-
-      // Verificar si la respuesta es exitosa y contiene la propiedad filePath
       if (response.success && response.data.filePath) {
         const qrCodeFilePath = response.data.filePath;
 
-        console.log("Ruta del archivo QR recibida:", qrCodeFilePath);
-
-        // Agregar la pieza al proyecto con el QR generado
         setProject((prev) => ({
           ...prev,
           pieces: [...prev.pieces, { ...newPiece, qrCodeFilePath }],
         }));
 
-        // Limpiar los campos de la nueva pieza
         setNewPiece({
           customPartId: "",
           partMaterialId: "",
@@ -137,6 +168,27 @@ function CreateProject() {
     }
   };
 
+  const handleDuplicateLastPiece = () => {
+    if (project.pieces.length === 0) {
+      alert("No hay piezas para duplicar.");
+      return;
+    }
+
+    const lastPiece = project.pieces[project.pieces.length - 1];
+
+    setNewPiece({
+      customPartId: lastPiece.customPartId,
+      partMaterialId: lastPiece.partMaterialId,
+      totalweightKg: lastPiece.totalweightKg,
+      sheetThicknessMm: lastPiece.sheetThicknessMm,
+      lengthPiecesMm: lastPiece.lengthPiecesMm,
+      heightMm: lastPiece.heightMm,
+      widthMm: lastPiece.widthMm,
+      observations: lastPiece.observations,
+      qrCodeFilePath: "", // Nuevo QR se generará al agregar
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -151,7 +203,6 @@ function CreateProject() {
     }
 
     try {
-      // Asegúrate de enviar el proyecto con las piezas como un JSON
       const projectDto = {
         clientAlias: project.clientAlias,
         contact: project.contact,
@@ -160,23 +211,38 @@ function CreateProject() {
         installationDateTime: project.installationDateTime,
       };
 
-      // Transformar las piezas en DTO
-      const partDtos = project.pieces.map((piece) => ({
-        customPart: { id: piece.customPartId },
-        partMaterial: { id: piece.partMaterialId },
-        totalweightKg: piece.totalweightKg,
-        sheetThicknessMm: piece.sheetThicknessMm,
-        lengthPiecesMm: piece.lengthPiecesMm,
-        heightMm: piece.heightMm,
-        widthMm: piece.widthMm,
-        observations: piece.observations,
-      }));
+      // Construir partDtos incluyendo los nombres de CustomPart y PartMaterial
+      const partDtos = project.pieces.map((piece) => {
+        const customPart = customPartOptions.find(
+          (p) => p.id.toString() === piece.customPartId.toString()
+        );
+        const partMaterial = materialOptions.find(
+          (m) => m.id.toString() === piece.partMaterialId.toString()
+        );
 
-      // Llamar al backend para crear el proyecto con las piezas
+        return {
+          customPart: {
+            id: piece.customPartId,
+            customPart: customPart?.customPart || "Sin nombre", // Incluir el nombre
+          },
+          partMaterial: {
+            id: piece.partMaterialId,
+            materialName: partMaterial?.materialName || "Sin material", // Incluir el nombre
+          },
+          totalweightKg: parseFloat(piece.totalweightKg),
+          sheetThicknessMm: parseFloat(piece.sheetThicknessMm),
+          lengthPiecesMm: parseFloat(piece.lengthPiecesMm),
+          heightMm: parseFloat(piece.heightMm),
+          widthMm: parseFloat(piece.widthMm),
+          observations: piece.observations,
+        };
+      });
+
       const response = await ProjectService.createNewProject(
         projectDto,
         partDtos
       );
+
       if (response.success) {
         alert("¡Proyecto creado con éxito!");
         setProject({
@@ -200,61 +266,92 @@ function CreateProject() {
     <>
       <div className={styles.container}>
         <h1 className={styles.title}>Crear Proyecto</h1>
-        {error && <div className="alert alert-danger">{error}</div>}
+        {error && <div className={styles.error}>{error}</div>}
         <form onSubmit={handleSubmit} className={styles.form}>
-          {/* Campos del proyecto */}
-          <div>
-            <label>Cliente</label>
-            <input
-              type="text"
-              value={project.clientAlias}
-              onChange={(e) =>
-                setProject({ ...project, clientAlias: e.target.value })
-              }
-              required
-              className={styles.inputText}
-            />
-          </div>
-          <div>
-            <label>Contacto</label>
-            <input
-              type="text"
-              value={project.contact}
-              onChange={(e) =>
-                setProject({ ...project, contact: e.target.value })
-              }
-              required
-              className={styles.inputText}
-            />
-          </div>
-          <div>
-            <label>Fecha de Visita</label>
-            <input
-              type="datetime-local"
-              value={project.visitDateTime}
-              onChange={(e) =>
-                setProject({ ...project, visitDateTime: e.target.value })
-              }
-              required
-              className={styles.inputDatetime}
-            />
-          </div>
-          <div>
-            <label>Fecha de Instalación estimada</label>
-            <input
-              type="datetime-local"
-              value={project.installationDateTime}
-              onChange={(e) =>
-                setProject({ ...project, installationDateTime: e.target.value })
-              }
-              required
-              className={styles.inputDatetime}
-            />
+          {/* Campos del proyecto - Diseño en dos columnas */}
+          <div className={styles.formRow}>
+            <div className={styles.formColumn}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Cliente</label>
+                <input
+                  type="text"
+                  value={project.clientAlias}
+                  onChange={(e) =>
+                    setProject({ ...project, clientAlias: e.target.value })
+                  }
+                  required
+                  className={styles.input}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Contacto</label>
+                <input
+                  type="text"
+                  value={project.contact}
+                  onChange={(e) =>
+                    setProject({ ...project, contact: e.target.value })
+                  }
+                  required
+                  className={styles.input}
+                />
+              </div>
+            </div>
+            <div className={styles.formColumn}>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>Fecha de Visita</label>
+                <input
+                  type="datetime-local"
+                  value={project.visitDateTime}
+                  onChange={(e) =>
+                    setProject({ ...project, visitDateTime: e.target.value })
+                  }
+                  required
+                  className={styles.input}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.label}>
+                  Fecha de Instalación Estimada
+                </label>
+                <input
+                  type="datetime-local"
+                  value={project.installationDateTime}
+                  onChange={(e) =>
+                    setProject({
+                      ...project,
+                      installationDateTime: e.target.value,
+                    })
+                  }
+                  required
+                  className={styles.input}
+                />
+              </div>
+            </div>
           </div>
 
+          {/* Botones centrados para piezas - Formando triángulo invertido
+          <div className={styles.buttonGroup}>
+            <div className={styles.buttonRow}>
+              <button
+                type="button"
+                className={styles.buttonPrimary}
+                onClick={handleAddPiece}
+              >
+                Agregar Pieza
+              </button>
+              <button
+                type="button"
+                className={styles.buttonSecondary}
+                onClick={handleDuplicateLastPiece}
+              >
+                Duplicar Última Pieza
+              </button>
+            </div>
+          </div> */}
+
           {/* Tabla de piezas */}
-          <h3>Piezas</h3>
-          <table className={`table table-bordered ${styles.table}`}>
+          <h3 className={styles.subtitle}>Piezas</h3>
+          <table className={`table ${styles.table}`}>
             <thead>
               <tr>
                 <th>Pieza</th>
@@ -288,10 +385,17 @@ function CreateProject() {
                   <td>
                     {piece.qrCodeFilePath && (
                       <img
-                        src={getQRCodeImage(piece.qrCodeFilePath)} // Usar la función getQRCodeImage
+                        src={
+                          qrImageUrls[piece.qrCodeFilePath] ||
+                          "/placeholder-qr.png"
+                        } // Usar URL desde estado
                         alt="QR Code"
                         width="50"
                         height="50"
+                        onError={(e) => {
+                          e.target.src = "/placeholder-qr.png"; // Fallback si la imagen no carga
+                        }}
+                        className={styles.qrImage}
                       />
                     )}
                   </td>
@@ -304,6 +408,7 @@ function CreateProject() {
                     onChange={(e) =>
                       setNewPiece({ ...newPiece, customPartId: e.target.value })
                     }
+                    className={styles.select}
                   >
                     <option value="">Seleccione una pieza</option>
                     {customPartOptions.map((part) => (
@@ -322,6 +427,7 @@ function CreateProject() {
                         partMaterialId: e.target.value,
                       })
                     }
+                    className={styles.select}
                   >
                     <option value="">Seleccione un material</option>
                     {materialOptions.map((material) => (
@@ -342,7 +448,7 @@ function CreateProject() {
                       })
                     }
                     placeholder="Peso Total (kg)"
-                    className={styles.inputNumber}
+                    className={styles.input}
                   />
                 </td>
                 <td>
@@ -356,7 +462,7 @@ function CreateProject() {
                       })
                     }
                     placeholder="Espesor (mm)"
-                    className={styles.inputNumber}
+                    className={styles.input}
                   />
                 </td>
                 <td>
@@ -370,7 +476,7 @@ function CreateProject() {
                       })
                     }
                     placeholder="Largo (mm)"
-                    className={styles.inputNumber}
+                    className={styles.input}
                   />
                 </td>
                 <td>
@@ -381,7 +487,7 @@ function CreateProject() {
                       setNewPiece({ ...newPiece, heightMm: e.target.value })
                     }
                     placeholder="Alto (mm)"
-                    className={styles.inputNumber}
+                    className={styles.input}
                   />
                 </td>
                 <td>
@@ -392,30 +498,44 @@ function CreateProject() {
                       setNewPiece({ ...newPiece, widthMm: e.target.value })
                     }
                     placeholder="Ancho (mm)"
-                    className={styles.inputNumber}
+                    className={styles.input}
                   />
                 </td>
                 <td>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={handleAddPiece}
-                  >
-                    Agregar Pieza
-                  </button>
+                  {/* Espacio vacío, ya que los botones se movieron arriba */}
                 </td>
               </tr>
             </tbody>
           </table>
 
-          <div className="text-center mt-3">
-            <button type="submit" className="btn btn-success">
+          {/* Botones centrados para piezas - Formando triángulo invertido */}
+          <div className={styles.buttonGroup}>
+            <div className={styles.buttonRow}>
+              <button
+                type="button"
+                className={styles.buttonPrimary}
+                onClick={handleAddPiece}
+              >
+                Agregar Pieza
+              </button>
+              <button
+                type="button"
+                className={styles.buttonSecondary}
+                onClick={handleDuplicateLastPiece}
+              >
+                Duplicar Última Pieza
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.submitButton}>
+            <button type="submit" className={styles.buttonSuccess}>
               Crear Proyecto
             </button>
           </div>
         </form>
       </div>
-      <BackButton />
+      <BackButton className={styles.backButton} />
     </>
   );
 }

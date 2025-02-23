@@ -1,3 +1,4 @@
+// AuthContext.jsx
 import PropTypes from "prop-types";
 import React, { createContext, useEffect, useState } from "react";
 import { getRoleFromToken, isAuthenticated } from "./AuthService";

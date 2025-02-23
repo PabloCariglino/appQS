@@ -26,7 +26,11 @@ const CustomPartService = {
     try {
       const response = await instance.get("/custom-part-list");
       console.log("Piezas personalizadas recibidas:", response.data);
-      return response.data;
+      return response.data.map((part) => ({
+        id: part.id,
+        customPart: part.customPart, // Asegúrate de incluir el nombre
+        imageFilePath: part.imageFilePath,
+      }));
     } catch (error) {
       console.error("Error al obtener piezas personalizadas:", error);
       throw error;

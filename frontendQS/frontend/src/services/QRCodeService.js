@@ -1,3 +1,4 @@
+// QrCodeService.js
 import axios from "axios";
 import { getAccessToken } from "../auth/AuthService";
 

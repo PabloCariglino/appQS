@@ -26,7 +26,10 @@ const PartMaterialService = {
     try {
       const response = await instance.get("/material-list");
       console.log("Materiales recibidos:", response.data);
-      return response.data;
+      return response.data.map((material) => ({
+        id: material.id,
+        materialName: material.materialName, // Asegúrate de incluir el nombre
+      }));
     } catch (error) {
       console.error("Error al obtener materiales:", error);
       throw error;
