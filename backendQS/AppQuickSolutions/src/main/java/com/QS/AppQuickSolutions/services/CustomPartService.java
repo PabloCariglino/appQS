@@ -110,20 +110,20 @@ public class CustomPartService {
     }
 
     // Validar el nombre de la pieza personalizada
-    private void validateCustomPartName(String customPartName) {
-        if (customPartName == null || customPartName.trim().isEmpty()) {
-            throw new IllegalArgumentException("El nombre de la pieza personalizada no puede estar vacío.");
-        }
-    }
+    // private void validateCustomPartName(String customPartName) {
+    //     if (customPartName == null || customPartName.trim().isEmpty()) {
+    //         throw new IllegalArgumentException("El nombre de la pieza personalizada no puede estar vacío.");
+    //     }
+    // }
 
     // Guardar una imagen en el sistema de archivos
-    private String saveImage(MultipartFile image) throws IOException {
-        String imageName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
-        Path imagePath = Paths.get(uploadDir, imageName);
-        Files.createDirectories(imagePath.getParent());
-        Files.copy(image.getInputStream(), imagePath);
-        return imageName;
-    }
+    // private String saveImage(MultipartFile image) throws IOException {
+    //     String imageName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
+    //     Path imagePath = Paths.get(uploadDir, imageName);
+    //     Files.createDirectories(imagePath.getParent());
+    //     Files.copy(image.getInputStream(), imagePath);
+    //     return imageName;
+    // }
 
     // Eliminar un archivo de imagen del sistema de archivos
     private void deleteImageFile(String imageFilePath) throws IOException {

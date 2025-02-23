@@ -18,6 +18,7 @@ import lombok.Setter;
 @Setter
 public class ProjectDto {
     
+    private Long id;
     @NotNull
     private String clientAlias;
     @NotNull

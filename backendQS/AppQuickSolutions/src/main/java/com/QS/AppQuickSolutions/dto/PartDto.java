@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.QS.AppQuickSolutions.entity.CustomPart;
 import com.QS.AppQuickSolutions.entity.PartMaterial;
+import com.QS.AppQuickSolutions.entity.Project;
 import com.QS.AppQuickSolutions.enums.PartState;
 
 import lombok.AllArgsConstructor;
@@ -31,10 +32,13 @@ public class PartDto {
     private String qrCodeData; //Guarda el QR asociado
     private String qrCodeFilePath; //Guarda la URL o el path de la imagen del QR
     
+    private Boolean receptionState;
     private LocalDateTime scanDateTime; //Fecha y hora de escaneao de recepcion de pieza
     private Boolean qualityControlState; //Control de calidad de pieza
 
     private PartState partState;
 
     private String observations; //Observaciones
+    // private ProjectDto project;
+    private Project project;
 }

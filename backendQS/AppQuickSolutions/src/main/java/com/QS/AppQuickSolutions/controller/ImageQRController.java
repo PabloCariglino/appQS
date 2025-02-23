@@ -1,5 +1,6 @@
 package com.QS.AppQuickSolutions.controller;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -27,7 +28,7 @@ public class ImageQRController {
             Path file = qrCodeDirectory.resolve(filename);
             Resource resource = new UrlResource(file.toUri());
 
-            if (resource.exists() || resource.isReadable()) {
+            if (resource.exists() && resource.isReadable()) {
                 return ResponseEntity.ok()
                         .contentType(MediaType.IMAGE_PNG) // Ajusta el tipo de contenido según el formato de la imagen
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
@@ -35,8 +36,8 @@ public class ImageQRController {
             } else {
                 return ResponseEntity.notFound().build();
             }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body(null);
         }
     }
 }

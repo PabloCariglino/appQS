@@ -4,12 +4,18 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.QS.AppQuickSolutions.dto.PartDto;
+import com.QS.AppQuickSolutions.entity.Part;
+import com.QS.AppQuickSolutions.repository.PartRepository;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
@@ -21,39 +27,106 @@ import com.google.zxing.qrcode.QRCodeWriter;
 public class QRCodeService {
 
     @Value("${qrcode.upload-dir}")
-    private String qrDirectory;  // Directorio donde se guardarán los códigos QR generados
+    private String qrDirectory;
+
+    @Autowired
+    PartRepository partRepository;
 
     /**
-     * Genera un código QR y lo guarda en el sistema de archivos.
-     *
-     * @param data       Datos que se codificarán en el QR.
-     * @param width      Ancho del QR.
-     * @param height     Alto del QR.
-     * @param fileName   Nombre del archivo QR.
-     * @return La ruta completa del archivo generado.
-     * @throws WriterException Si hay un error al generar el QR.
-     * @throws IOException     Si hay un error al guardar el archivo.
-    */
-
-    public String generateQRCodeImage(String data, int width, int height, String fileName) throws WriterException, IOException {
-        // Configuración para codificación de caracteres
-        Map<EncodeHintType, Object> hints = new HashMap<>();
-        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
-
-        // Asegurar que el directorio exista
-        Path qrPathDirectory = FileSystems.getDefault().getPath("src/main/resources/static/qr-codes");
-        if (!Files.exists(qrPathDirectory)) {
-            Files.createDirectories(qrPathDirectory);  // Crear el directorio si no existe
+     * Genera los datos del QR a partir de un Part entity.
+     */
+    public String generateQrDataFromPart(Part part) {
+        if (part == null) {
+            throw new IllegalArgumentException("La pieza no puede ser nula.");
         }
 
-        // Generar el código QR
-        QRCodeWriter qrCodeWriter = new QRCodeWriter();
-        BitMatrix bitMatrix = qrCodeWriter.encode(data, BarcodeFormat.QR_CODE, width, height, hints);
+        return "Part ID: " + (part.getId() != null ? part.getId().toString() : "N/A") +
+               "\nProject ID: " + (part.getProject() != null ? part.getProject().getId().toString() : "N/A") +
+               "\nCustomPart: " + (part.getCustomPart() != null ? part.getCustomPart().getCustomPart() : "N/A") +
+               "\nMaterial: " + (part.getPartMaterial() != null ? part.getPartMaterial().getMaterialName() : "N/A") +
+               "\nWeight: " + (part.getTotalweightKg() != null ? part.getTotalweightKg() : "N/A") +
+               "\nThickness: " + (part.getSheetThicknessMm() != null ? part.getSheetThicknessMm() : "N/A") +
+               "\nLength: " + (part.getLengthPiecesMm() != null ? part.getLengthPiecesMm() : "N/A") +
+               "\nHeight: " + (part.getHeightMm() != null ? part.getHeightMm() : "N/A") +
+               "\nWidth: " + (part.getWidthMm() != null ? part.getWidthMm() : "N/A") +
+               "\nReception State: " + (part.getReceptionState() != null ? part.getReceptionState().toString() : "false");
+    }
 
-        // Guardar el QR en un archivo dentro del directorio especificado
+    /**
+     * Genera la imagen del QR y devuelve la ruta del archivo.
+    */
+    public String generateQRCodeImage(String qrData, int width, int height, String fileName) throws WriterException, IOException {
+        Map<EncodeHintType, Object> hints = new HashMap<>();
+        hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
+    
+        Path qrPathDirectory = FileSystems.getDefault().getPath(qrDirectory);
+        if (!Files.exists(qrPathDirectory)) {
+            Files.createDirectories(qrPathDirectory);
+        }
+    
+        QRCodeWriter qrCodeWriter = new QRCodeWriter();
+        BitMatrix bitMatrix = qrCodeWriter.encode(qrData, BarcodeFormat.QR_CODE, width, height, hints);
         Path qrPath = qrPathDirectory.resolve(fileName);
         MatrixToImageWriter.writeToPath(bitMatrix, "PNG", qrPath);
+    
+        return qrPath.toAbsolutePath().toString();
+    }
 
-        return qrPath.toAbsolutePath().toString(); // Retorna la ruta completa del archivo QR generado
+    /**
+     * Genera el QR completo (datos + imagen) a partir de una Part entity ya persistida.
+     */
+    public String generateQRCodeForPart(Part part) throws WriterException, IOException {
+        if (part == null) {
+            throw new IllegalArgumentException("La pieza no puede ser nula.");
+        }
+        String qrData = generateQrDataFromPart(part);
+        return generateQRCodeImage(qrData, 300, 300, UUID.randomUUID() + "_part_qr.png");
+    }
+
+    /**
+     * Genera el QR completo (datos + imagen) a partir de un PartDto (para compatibilidad, pero no recomendado).
+     */
+    @Deprecated
+    public String generateQRCodeForPartDto(PartDto partDto) throws WriterException, IOException {
+        String qrData = generateQrDataFromPartDto(partDto);
+        return generateQRCodeImage(qrData, 300, 300, UUID.randomUUID() + "_part_qr.png");
+    }
+
+    /**
+     * Genera los datos del QR a partir de un PartDto (deprecated, mantener solo para compatibilidad).
+     */
+    @Deprecated
+    public String generateQrDataFromPartDto(PartDto partDto) {
+        if (partDto.getCustomPart() == null || partDto.getPartMaterial() == null) {
+            throw new IllegalArgumentException("CustomPart y PartMaterial no pueden ser nulos.");
+        }
+
+        return "Part ID: N/A" + // Esto se actualizará después de persistir la entidad
+               "\nProject ID: " + (partDto.getProject() != null ? partDto.getProject().getId().toString() : "N/A") +
+               "\nCustomPart: " + (partDto.getCustomPart() != null ? partDto.getCustomPart().getCustomPart() : "N/A") +
+               "\nMaterial: " + (partDto.getPartMaterial() != null ? partDto.getPartMaterial().getMaterialName() : "N/A") +
+               "\nWeight: " + (partDto.getTotalweightKg() != null ? partDto.getTotalweightKg() : "N/A") +
+               "\nThickness: " + (partDto.getSheetThicknessMm() != null ? partDto.getSheetThicknessMm() : "N/A") +
+               "\nLength: " + (partDto.getLengthPiecesMm() != null ? partDto.getLengthPiecesMm() : "N/A") +
+               "\nHeight: " + (partDto.getHeightMm() != null ? partDto.getHeightMm() : "N/A") +
+               "\nWidth: " + (partDto.getWidthMm() != null ? partDto.getWidthMm() : "N/A") +
+               "\nReception State: " + (partDto.getReceptionState() != null ? partDto.getReceptionState().toString() : "false");
+    }
+
+    /**
+     * Actualiza el estado de una pieza después de escanear su QR.
+     */
+    public Part scanQRCode(String qrData) {
+        String[] qrParts = qrData.split("\n");
+        String partIdString = qrParts[0].split(":")[1].trim();
+        UUID partId = UUID.fromString(partIdString);
+
+        Part part = partRepository.findById(partId)
+                .orElseThrow(() -> new RuntimeException("Pieza no encontrada"));
+
+        // Cambiar el estado de la pieza a "recibida" y actualizar el scanDateTime
+        part.setReceptionState(true);
+        part.setScanDateTime(LocalDateTime.now()); // Actualizamos con la fecha actual
+        return partRepository.save(part);
     }
 }

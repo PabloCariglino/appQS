@@ -1,9 +1,7 @@
 package com.QS.AppQuickSolutions.services;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,10 +33,9 @@ public class ProjectService {
     @Autowired
     private QRCodeService qrCodeService;
 
+ 
     @Transactional
-    public Project createProjectWithParts(ProjectDto projectDto, List<PartDto> partDtos) throws WriterException, IOException, java.io.IOException {
-        
-        // Convertir el DTO del proyecto a la entidad Project
+    public Project createProjectWithParts(ProjectDto projectDto, List<PartDto> partDtos) throws IOException, WriterException, java.io.IOException {
         Project project = new Project();
         project.setClientAlias(projectDto.getClientAlias());
         project.setContact(projectDto.getContact());
@@ -49,26 +46,27 @@ public class ProjectService {
         project.setInFolder(projectDto.getInFolder());
         project.setInstallationDateTime(projectDto.getInstallationDateTime());
         project.setState(projectDto.getState());
-       
-
-        // Guardar el proyecto primero
+    
         Project savedProject = projectRepository.save(project);
-
-        // Crear y guardar las piezas asociadas al proyecto
+    
         for (PartDto partDto : partDtos) {
             Part part = new Part();
             part.setProject(savedProject); // Asignar el proyecto guardado
+    
             populatePartData(part, partDto);
-
-            // Generar el código QR para la pieza
-            String qrData = generateQrData(part);
-            String qrFilePath = qrCodeService.generateQRCodeImage(qrData, 300, 300, UUID.randomUUID() + "_part_qr.png");
-            part.setQrCodeFilePath(qrFilePath);
-
-            partRepository.save(part); // Guardar la pieza con el QR
+    
+            Part savedPart = partRepository.save(part); // Guardar la pieza primero
+    
+            // Generar el QR usando la pieza persistida
+            String qrData = qrCodeService.generateQrDataFromPart(savedPart);
+            String qrFilePath = qrCodeService.generateQRCodeImage(qrData, 300, 300, savedPart.getId() + "_part_qr.png");
+            savedPart.setQrCodeData(qrData);
+            savedPart.setQrCodeFilePath(qrFilePath);
+    
+            partRepository.save(savedPart); // Guardar nuevamente con el QR
         }
-
-        return savedProject; // Retornar el proyecto con las piezas asociadas
+    
+        return savedProject;
     }
 
     // Obtener todos los proyectos
@@ -82,9 +80,8 @@ public class ProjectService {
     }
 
     // Actualización parcial del proyecto
-    public Project updateProject(Long id, ProjectDto projectDto) throws java.io.IOException, WriterException {
+    public Project updateProject(Long id, ProjectDto projectDto) throws IOException, WriterException, java.io.IOException {
         Project existingProject = getProjectById(id);
-
         if (projectDto.getClientAlias() != null) existingProject.setClientAlias(projectDto.getClientAlias());
         if (projectDto.getContact() != null) existingProject.setContact(projectDto.getContact());
         if (projectDto.getVisitDateTime() != null) existingProject.setVisitDateTime(projectDto.getVisitDateTime());
@@ -97,20 +94,18 @@ public class ProjectService {
         // Actualizar las piezas si es necesario
         if (projectDto.getParts() != null && !projectDto.getParts().isEmpty()) {
             for (PartDto partDto : projectDto.getParts()) {
-                // Actualizar las piezas asociadas al proyecto
                 partService.updatePart(partDto.getId(), partDto);
             }
         }
-
         return projectRepository.save(existingProject);
     }
-
 
     // Eliminar un proyecto
     public void deleteProject(Long id) {
         projectRepository.deleteById(id);
     }
 
+    // Método para poblar los datos de una pieza desde un DTO
     private void populatePartData(Part part, PartDto partDto) {
         part.setCustomPart(partDto.getCustomPart());
         part.setPartMaterial(partDto.getPartMaterial());
@@ -122,28 +117,9 @@ public class ProjectService {
         part.setObservations(partDto.getObservations());
         part.setPartState(partDto.getPartState());
         part.setQualityControlState(partDto.getQualityControlState());
-        part.setScanDateTime(LocalDateTime.now());
+        part.setReceptionState(false); // Inicializar explícitamente en false
+        part.setScanDateTime(null); // Valor por defecto
     }
-
-    private String generateQrData(Part part) {
-        return "Part ID: " + part.getId() +
-                "\nCustomPart: " + part.getCustomPart().getCustomPart() +
-                "\nMaterial: " + part.getPartMaterial().getMaterialName();
-    }
-    
-
-   
-
-    // private void updateProjectDetails(Project project, ProjectDto projectDto) {
-    //     project.setClientAlias(projectDto.getClientAlias());
-    //     project.setContact(projectDto.getContact());
-    //     project.setState(projectDto.getState());
-    //     project.setVisitDateTime(projectDto.getVisitDateTime());
-    //     project.setVisitStatus(project.getVisitStatus());
-    //     project.setDevelopmentStatus(project.getDevelopmentStatus());
-    //     project.setInFolder(project.getInFolder());
-    //     project.setInstallationDateTime(projectDto.getInstallationDateTime());
-    // }
 
     // Devuelve la lista de parts de un project
     public List<PartDto> getPartsByProject(Long projectId) {
@@ -163,37 +139,8 @@ public class ProjectService {
             partDto.setQualityControlState(part.getQualityControlState());
             partDto.setPartState(part.getPartState());
             partDto.setObservations(part.getObservations());
+            partDto.setReceptionState(part.getReceptionState()); // Incluir receptionState en el DTO
             return partDto;
         }).collect(Collectors.toList());
-    }
-    
-
-
-    // private List<Part> createPartsForProject(Project project, List<PartDto> partDtos) {
-    //     if (partDtos == null || partDtos.isEmpty()) {
-    //         return List.of();
-    //     }
-
-    //     return partDtos.stream()
-    //             .map(partDto -> {
-    //                 try {
-    //                     return partService.createPart(project, partDto);
-    //                 } catch (Exception e) {
-    //                     throw new RuntimeException("Error al crear piezas para el proyecto: " + e.getMessage(), e);
-    //                 }
-    //             })
-    //             .collect(Collectors.toList());
-    // }
-
-    private void validateProjectDto(ProjectDto projectDto) {
-       
-        if (projectDto.getClientAlias() == null || projectDto.getClientAlias().isBlank()) {
-            throw new IllegalArgumentException("El alias del cliente no puede estar vacío.");
-        }
-        if (projectDto.getContact() == null) {
-            throw new IllegalArgumentException("El contacto no puede estar vacío.");
-        }
-        
-
     }
 }
