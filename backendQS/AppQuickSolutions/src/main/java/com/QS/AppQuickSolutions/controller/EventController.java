@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.QS.AppQuickSolutions.entity.Event;
 import com.QS.AppQuickSolutions.services.EventService;
 
+import jakarta.validation.ValidationException;
+
 @RestController
 @RequestMapping("/api/events")
 public class EventController {
@@ -34,14 +36,15 @@ public class EventController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<?> createEvent(@RequestBody Event event) {
-    try {
-        Event createdEvent = eventService.createEvent(event);
-        return ResponseEntity.ok(createdEvent);
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                             .body("Error creating event: " + e.getMessage());
-    }
+    public ResponseEntity<Event> createEvent(@RequestBody Event event) {
+        try {
+            Event createdEvent = eventService.createEvent(event);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdEvent);
+        } catch (ValidationException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @PreAuthorize("hasRole('ADMIN')")

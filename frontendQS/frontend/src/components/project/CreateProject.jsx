@@ -1,4 +1,4 @@
-// CreateProject.jsx (modificado)
+// CreateProject.jsx
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../../auth/AuthService"; // Importar getAccessToken
@@ -6,7 +6,6 @@ import BackButton from "../../fragments/BackButton";
 import CustomPartService from "../../services/CustomPartService";
 import PartMaterialService from "../../services/PartMaterialService";
 import ProjectService from "../../services/ProjectService";
-import QRCodeService from "../../services/QRCodeService";
 import styles from "./CreateProject.module.css";
 
 function CreateProject() {
@@ -28,13 +27,14 @@ function CreateProject() {
     heightMm: "",
     widthMm: "",
     observations: "",
-    qrCodeFilePath: "",
+    qrCodeFilePath: "", // QR vacío hasta crear el proyecto
   });
 
   const [customPartOptions, setCustomPartOptions] = useState([]);
   const [materialOptions, setMaterialOptions] = useState([]);
   const [error, setError] = useState(null);
   const [qrImageUrls, setQrImageUrls] = useState({}); // Estado para almacenar URLs de QR
+  const [isLoadingQr, setIsLoadingQr] = useState({}); // Estado por pieza para manejar la carga de QRs
 
   // Cargar opciones de piezas y materiales
   useEffect(() => {
@@ -54,45 +54,82 @@ function CreateProject() {
     fetchOptions();
   }, []);
 
-  // Cargar imágenes QR asíncronamente cuando cambian las piezas
+  // Cargar imágenes QR asíncronamente después de crear el proyecto
   useEffect(() => {
     const loadQrImages = async () => {
-      const urls = {};
+      const newLoadingState = {};
+      const newUrls = {};
       for (const piece of project.pieces) {
         if (piece.qrCodeFilePath) {
-          const url = await getQRCodeImage(piece.qrCodeFilePath);
-          urls[piece.qrCodeFilePath] = url || "/placeholder-qr.png";
+          newLoadingState[piece.qrCodeFilePath] = true; // Marcamos como cargando
         }
       }
-      setQrImageUrls(urls);
-    };
-    loadQrImages();
-  }, [project.pieces]); // Se ejecuta cuando cambian las piezas
+      setIsLoadingQr(newLoadingState);
 
-  // Función para obtener la imagen del QR
+      for (const piece of project.pieces) {
+        if (piece.qrCodeFilePath) {
+          try {
+            const url = await getQRCodeImage(piece.qrCodeFilePath);
+            newUrls[piece.qrCodeFilePath] = url || "/placeholder-qr.png";
+            console.log(`URL generada para ${piece.qrCodeFilePath}:`, url); // Depuración
+          } catch (err) {
+            console.error(
+              `Error al cargar QR para ${piece.qrCodeFilePath}:`,
+              err
+            );
+            newUrls[piece.qrCodeFilePath] = "/placeholder-qr.png";
+          }
+          newLoadingState[piece.qrCodeFilePath] = false; // Marcamos como cargado
+        }
+      }
+      setQrImageUrls(newUrls);
+      setIsLoadingQr((prev) => ({ ...prev, ...newLoadingState }));
+    };
+    if (project.pieces.some((piece) => piece.qrCodeFilePath)) {
+      // Solo cargar si hay QRs
+      loadQrImages();
+    }
+  }, [project.pieces]); // Se ejecuta cuando cambian las piezas con QRs
+
+  // Función para obtener la imagen del QR con nombres relativos
   const getQRCodeImage = async (filename) => {
     try {
-      const token = getAccessToken(); // Obtener el token JWT
+      const token = getAccessToken();
+      if (!token) {
+        console.error("No hay token JWT disponible");
+        return null;
+      }
+      // Extraer solo el nombre del archivo si filename es una ruta absoluta
+      const cleanFilename =
+        filename.split("\\").pop() || filename.split("/").pop() || filename;
+      console.log(
+        "Solicitando QR con token:",
+        token,
+        "para archivo:",
+        cleanFilename
+      );
       const response = await fetch(
-        `http://localhost:8080/qr-codes/${filename}`,
+        `http://localhost:8080/qr-codes/${cleanFilename}`,
         {
           headers: {
-            Authorization: `Bearer ${token}`, // Incluir el token en el encabezado
+            Authorization: `Bearer ${token}`,
           },
         }
       );
 
-      if (response.ok) {
-        const blob = await response.blob(); // Obtener la imagen como Blob
-        return URL.createObjectURL(blob); // Crear una URL para el Blob
-      } else {
+      if (!response.ok) {
         throw new Error(
-          `Error al cargar la imagen del QR: ${response.status} - ${response.statusText}`
+          `Error HTTP: ${response.status} - ${response.statusText}`
         );
       }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      console.log("URL generada exitosamente:", url);
+      return url;
     } catch (error) {
       console.error("Error al obtener la imagen del QR:", error);
-      return null; // Retornar null si hay error, para mostrar un placeholder
+      return null;
     }
   };
 
@@ -105,7 +142,6 @@ function CreateProject() {
     const customPart = customPartOptions.find(
       (p) => p.id.toString() === newPiece.customPartId.toString()
     );
-
     const partMaterial = materialOptions.find(
       (m) => m.id.toString() === newPiece.partMaterialId.toString()
     );
@@ -115,15 +151,11 @@ function CreateProject() {
       return;
     }
 
-    // Crear un objeto PartDto con los datos de la pieza, incluyendo los nombres
     const partDto = {
-      customPart: {
-        id: customPart.id,
-        customPart: customPart.customPart, // Incluir el nombre de la pieza
-      },
+      customPart: { id: customPart.id, customPart: customPart.customPart },
       partMaterial: {
         id: partMaterial.id,
-        materialName: partMaterial.materialName, // Incluir el nombre del material
+        materialName: partMaterial.materialName,
       },
       totalweightKg: parseFloat(newPiece.totalweightKg),
       sheetThicknessMm: parseFloat(newPiece.sheetThicknessMm),
@@ -133,39 +165,22 @@ function CreateProject() {
       observations: newPiece.observations,
     };
 
-    console.log("Enviando datos al backend para generar QR:", partDto);
+    setProject((prev) => ({
+      ...prev,
+      pieces: [...prev.pieces, { ...newPiece, qrCodeFilePath: "" }], // QR vacío hasta crear el proyecto
+    }));
 
-    try {
-      const response = await QRCodeService.generateQRCode(partDto);
-
-      if (response.success && response.data.filePath) {
-        const qrCodeFilePath = response.data.filePath;
-
-        setProject((prev) => ({
-          ...prev,
-          pieces: [...prev.pieces, { ...newPiece, qrCodeFilePath }],
-        }));
-
-        setNewPiece({
-          customPartId: "",
-          partMaterialId: "",
-          totalweightKg: "",
-          sheetThicknessMm: "",
-          lengthPiecesMm: "",
-          heightMm: "",
-          widthMm: "",
-          observations: "",
-          qrCodeFilePath: "",
-        });
-      } else {
-        setError(
-          "Error al generar el código QR: Respuesta inesperada del servidor."
-        );
-      }
-    } catch (error) {
-      console.error("Error generating QR:", error);
-      setError("Error al generar el código QR.");
-    }
+    setNewPiece({
+      customPartId: "",
+      partMaterialId: "",
+      totalweightKg: "",
+      sheetThicknessMm: "",
+      lengthPiecesMm: "",
+      heightMm: "",
+      widthMm: "",
+      observations: "",
+      qrCodeFilePath: "",
+    });
   };
 
   const handleDuplicateLastPiece = () => {
@@ -185,7 +200,7 @@ function CreateProject() {
       heightMm: lastPiece.heightMm,
       widthMm: lastPiece.widthMm,
       observations: lastPiece.observations,
-      qrCodeFilePath: "", // Nuevo QR se generará al agregar
+      qrCodeFilePath: "", // QR vacío hasta crear el proyecto
     });
   };
 
@@ -211,7 +226,6 @@ function CreateProject() {
         installationDateTime: project.installationDateTime,
       };
 
-      // Construir partDtos incluyendo los nombres de CustomPart y PartMaterial
       const partDtos = project.pieces.map((piece) => {
         const customPart = customPartOptions.find(
           (p) => p.id.toString() === piece.customPartId.toString()
@@ -223,11 +237,11 @@ function CreateProject() {
         return {
           customPart: {
             id: piece.customPartId,
-            customPart: customPart?.customPart || "Sin nombre", // Incluir el nombre
+            customPart: customPart?.customPart || "Sin nombre",
           },
           partMaterial: {
             id: piece.partMaterialId,
-            materialName: partMaterial?.materialName || "Sin material", // Incluir el nombre
+            materialName: partMaterial?.materialName || "Sin material",
           },
           totalweightKg: parseFloat(piece.totalweightKg),
           sheetThicknessMm: parseFloat(piece.sheetThicknessMm),
@@ -242,17 +256,22 @@ function CreateProject() {
         projectDto,
         partDtos
       );
-
       if (response.success) {
         alert("¡Proyecto creado con éxito!");
+        const updatedPieces = response.data.parts.map((part) => ({
+          ...part,
+          customPartId: part.customPart.id,
+          partMaterialId: part.partMaterial.id,
+        }));
         setProject({
           clientAlias: "",
           contact: "",
           state: true,
           visitDateTime: "",
           installationDateTime: "",
-          pieces: [],
+          pieces: updatedPieces,
         });
+        setQrImageUrls({}); // Reiniciar las URLs de QRs
       } else {
         setError("Error al crear el proyecto");
       }
@@ -329,26 +348,6 @@ function CreateProject() {
             </div>
           </div>
 
-          {/* Botones centrados para piezas - Formando triángulo invertido
-          <div className={styles.buttonGroup}>
-            <div className={styles.buttonRow}>
-              <button
-                type="button"
-                className={styles.buttonPrimary}
-                onClick={handleAddPiece}
-              >
-                Agregar Pieza
-              </button>
-              <button
-                type="button"
-                className={styles.buttonSecondary}
-                onClick={handleDuplicateLastPiece}
-              >
-                Duplicar Última Pieza
-              </button>
-            </div>
-          </div> */}
-
           {/* Tabla de piezas */}
           <h3 className={styles.subtitle}>Piezas</h3>
           <table className={`table ${styles.table}`}>
@@ -383,20 +382,39 @@ function CreateProject() {
                   <td>{piece.heightMm}</td>
                   <td>{piece.widthMm}</td>
                   <td>
-                    {piece.qrCodeFilePath && (
-                      <img
-                        src={
-                          qrImageUrls[piece.qrCodeFilePath] ||
-                          "/placeholder-qr.png"
-                        } // Usar URL desde estado
-                        alt="QR Code"
-                        width="50"
-                        height="50"
-                        onError={(e) => {
-                          e.target.src = "/placeholder-qr.png"; // Fallback si la imagen no carga
-                        }}
-                        className={styles.qrImage}
-                      />
+                    {piece.qrCodeFilePath ? (
+                      <>
+                        <img
+                          src={
+                            qrImageUrls[piece.qrCodeFilePath] ||
+                            "/placeholder-qr.png"
+                          }
+                          alt="QR Code"
+                          width="50"
+                          height="50"
+                          onError={(e) => {
+                            e.target.src = "/placeholder-qr.png";
+                            console.error(
+                              "Error al cargar QR para:",
+                              piece.qrCodeFilePath,
+                              e
+                            );
+                          }}
+                          className={styles.qrImage}
+                          style={{
+                            display: isLoadingQr[piece.qrCodeFilePath]
+                              ? "none"
+                              : "block",
+                          }}
+                        />
+                        {isLoadingQr[piece.qrCodeFilePath] && (
+                          <div className={styles.loading}>Cargando QR...</div>
+                        )}
+                      </>
+                    ) : (
+                      <div className={styles.noQr}>
+                        QR no generado (crear proyecto para generar)
+                      </div>
                     )}
                   </td>
                 </tr>

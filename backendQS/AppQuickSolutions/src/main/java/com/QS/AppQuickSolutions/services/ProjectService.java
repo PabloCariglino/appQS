@@ -33,7 +33,6 @@ public class ProjectService {
     @Autowired
     private QRCodeService qrCodeService;
 
- 
     @Transactional
     public Project createProjectWithParts(ProjectDto projectDto, List<PartDto> partDtos) throws IOException, WriterException, java.io.IOException {
         Project project = new Project();
@@ -47,39 +46,34 @@ public class ProjectService {
         project.setInstallationDateTime(projectDto.getInstallationDateTime());
         project.setState(projectDto.getState());
     
+        // Guardar el proyecto primero para obtener su ID
         Project savedProject = projectRepository.save(project);
     
+        // Crear y guardar cada pieza con el proyecto persistido, generando QR completo
         for (PartDto partDto : partDtos) {
-            Part part = new Part();
-            part.setProject(savedProject); // Asignar el proyecto guardado
+            Part part = partService.createPart(savedProject, partDto); // Usar createPart sin QR
+
+            // Generar el QR usando la pieza persistida con Project ID
+            String qrData = qrCodeService.generateQrDataFromPart(part);
+            String qrFilePath = qrCodeService.generateQRCodeImage(qrData, 300, 300, part.getId() + "_part_qr.png");
+            part.setQrCodeData(qrData);
+            part.setQrCodeFilePath(qrFilePath);
     
-            populatePartData(part, partDto);
-    
-            Part savedPart = partRepository.save(part); // Guardar la pieza primero
-    
-            // Generar el QR usando la pieza persistida
-            String qrData = qrCodeService.generateQrDataFromPart(savedPart);
-            String qrFilePath = qrCodeService.generateQRCodeImage(qrData, 300, 300, savedPart.getId() + "_part_qr.png");
-            savedPart.setQrCodeData(qrData);
-            savedPart.setQrCodeFilePath(qrFilePath);
-    
-            partRepository.save(savedPart); // Guardar nuevamente con el QR
+            partRepository.save(part); // Guardar la pieza con el QR completo
         }
     
+        // Retornar la respuesta directa sin ApiResponse
         return savedProject;
     }
 
-    // Obtener todos los proyectos
     public List<Project> getAllProjects() {
         return projectRepository.findAll();
     }
 
-    // Obtener proyecto por ID
     public Project getProjectById(Long id) {
         return projectRepository.findById(id).orElseThrow(() -> new RuntimeException("Proyecto no encontrado"));
     }
 
-    // Actualización parcial del proyecto
     public Project updateProject(Long id, ProjectDto projectDto) throws IOException, WriterException, java.io.IOException {
         Project existingProject = getProjectById(id);
         if (projectDto.getClientAlias() != null) existingProject.setClientAlias(projectDto.getClientAlias());
@@ -100,12 +94,10 @@ public class ProjectService {
         return projectRepository.save(existingProject);
     }
 
-    // Eliminar un proyecto
     public void deleteProject(Long id) {
         projectRepository.deleteById(id);
     }
 
-    // Método para poblar los datos de una pieza desde un DTO
     private void populatePartData(Part part, PartDto partDto) {
         part.setCustomPart(partDto.getCustomPart());
         part.setPartMaterial(partDto.getPartMaterial());
@@ -116,16 +108,16 @@ public class ProjectService {
         part.setWidthMm(partDto.getWidthMm());
         part.setObservations(partDto.getObservations());
         part.setPartState(partDto.getPartState());
-        part.setQualityControlState(partDto.getQualityControlState());
+        part.setQualityControlState(partDto.getQualityControlState()); // Corregido: debería ser partDto.getQualityControlState()
         part.setReceptionState(false); // Inicializar explícitamente en false
         part.setScanDateTime(null); // Valor por defecto
     }
 
-    // Devuelve la lista de parts de un project
     public List<PartDto> getPartsByProject(Long projectId) {
-        Project project = getProjectById(projectId); // Usa el método existente para obtener el proyecto
+        Project project = getProjectById(projectId);
         return project.getParts().stream().map(part -> {
             PartDto partDto = new PartDto();
+            partDto.setId(part.getId());
             partDto.setCustomPart(part.getCustomPart());
             partDto.setPartMaterial(part.getPartMaterial());
             partDto.setTotalweightKg(part.getTotalweightKg());
@@ -139,7 +131,7 @@ public class ProjectService {
             partDto.setQualityControlState(part.getQualityControlState());
             partDto.setPartState(part.getPartState());
             partDto.setObservations(part.getObservations());
-            partDto.setReceptionState(part.getReceptionState()); // Incluir receptionState en el DTO
+            partDto.setReceptionState(part.getReceptionState());
             return partDto;
         }).collect(Collectors.toList());
     }

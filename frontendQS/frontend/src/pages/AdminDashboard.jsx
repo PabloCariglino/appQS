@@ -1,3 +1,4 @@
+//AdminDashboard.jsx
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
@@ -6,6 +7,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 import { getAccessToken } from "../auth/AuthService";
+import EventService from "../services/EventService";
 import styles from "./AdminDashboard.module.css";
 
 const AdminDashboard = () => {
@@ -34,12 +36,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get("http://localhost:8080/api/events", {
-          headers: {
-            Authorization: `Bearer ${getAccessToken()}`,
-          },
-        });
-        setEvents(response.data || []);
+        const events = await EventService.getAllEvents();
+        setEvents(events || []);
       } catch (err) {
         setError("No tienes permisos para acceder a los eventos.");
         console.error("Error fetching events:", err);
@@ -68,27 +66,25 @@ const AdminDashboard = () => {
       return;
     }
     try {
-      if (selectedEvent) {
-        const response = await axios.put(
-          `http://localhost:8080/api/events/${selectedEvent.id}`,
-          newEvent
-        );
-        setEvents((prev) =>
-          prev.map((event) =>
-            event.id === selectedEvent.id ? response.data : event
-          )
-        );
-      } else {
-        const response = await axios.post(
-          "http://localhost:8080/api/events",
-          newEvent
-        );
-        setEvents((prev) => [...prev, response.data]);
-      }
+      const token = getAccessToken();
+      if (!token) throw new Error("No estás autenticado.");
+      const eventData = {
+        title: newEvent.title,
+        date: newEvent.date, // Asegúrate de que sea "YYYY-MM-DD"
+        color: newEvent.color,
+      };
+      const response = await axios.post(
+        "http://localhost:8080/api/events",
+        eventData,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setEvents((prev) => [...prev, response.data]);
       closeModal();
     } catch (err) {
       setError("Error al guardar el evento. Por favor, intenta nuevamente.");
-      console.error("Error saving event:", err);
+      console.error("Error saving event:", err.response?.data || err.message);
     }
   };
 
@@ -98,9 +94,7 @@ const AdminDashboard = () => {
   const handleConfirmDelete = async () => {
     if (selectedEvent) {
       try {
-        await axios.delete(
-          `http://localhost:8080/api/events/${selectedEvent.id}`
-        );
+        await EventService.deleteEvent(selectedEvent.id);
         setEvents((prev) =>
           prev.filter((event) => event.id !== selectedEvent.id)
         );

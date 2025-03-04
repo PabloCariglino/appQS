@@ -25,4 +25,6 @@ dist-ssr
 
 # Ignorar la carpeta de uploads en produccion
 src/main/resources/uploads/
+src/main/resources/qr-codes/
+
 

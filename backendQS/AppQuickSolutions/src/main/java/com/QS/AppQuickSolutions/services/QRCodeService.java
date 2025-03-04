@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,7 +31,7 @@ public class QRCodeService {
     private String qrDirectory;
 
     @Autowired
-    PartRepository partRepository;
+    private PartRepository partRepository;
 
     /**
      * Genera los datos del QR a partir de un Part entity.
@@ -59,17 +60,17 @@ public class QRCodeService {
         Map<EncodeHintType, Object> hints = new HashMap<>();
         hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
     
-        Path qrPathDirectory = FileSystems.getDefault().getPath(qrDirectory);
+       Path qrPathDirectory = Paths.get(qrDirectory).toAbsolutePath(); // Usar path absoluto
         if (!Files.exists(qrPathDirectory)) {
             Files.createDirectories(qrPathDirectory);
         }
-    
+
         QRCodeWriter qrCodeWriter = new QRCodeWriter();
         BitMatrix bitMatrix = qrCodeWriter.encode(qrData, BarcodeFormat.QR_CODE, width, height, hints);
         Path qrPath = qrPathDirectory.resolve(fileName);
         MatrixToImageWriter.writeToPath(bitMatrix, "PNG", qrPath);
-    
-        return qrPath.toAbsolutePath().toString();
+
+        return fileName;
     }
 
     /**
@@ -80,28 +81,26 @@ public class QRCodeService {
             throw new IllegalArgumentException("La pieza no puede ser nula.");
         }
         String qrData = generateQrDataFromPart(part);
-        return generateQRCodeImage(qrData, 300, 300, UUID.randomUUID() + "_part_qr.png");
+        return generateQRCodeImage(qrData, 300, 300, part.getId() + "_part_qr.png");
     }
 
     /**
-     * Genera el QR completo (datos + imagen) a partir de un PartDto (para compatibilidad, pero no recomendado).
+     * Genera el QR completo (datos + imagen) a partir de un PartDto (para compatibilidad).
      */
-    @Deprecated
     public String generateQRCodeForPartDto(PartDto partDto) throws WriterException, IOException {
         String qrData = generateQrDataFromPartDto(partDto);
         return generateQRCodeImage(qrData, 300, 300, UUID.randomUUID() + "_part_qr.png");
     }
 
     /**
-     * Genera los datos del QR a partir de un PartDto (deprecated, mantener solo para compatibilidad).
+     * Genera los datos del QR a partir de un PartDto.
      */
-    @Deprecated
     public String generateQrDataFromPartDto(PartDto partDto) {
         if (partDto.getCustomPart() == null || partDto.getPartMaterial() == null) {
             throw new IllegalArgumentException("CustomPart y PartMaterial no pueden ser nulos.");
         }
 
-        return "Part ID: N/A" + // Esto se actualizará después de persistir la entidad
+        return "Part ID: " + (partDto.getId() != null ? partDto.getId().toString() : "N/A") +
                "\nProject ID: " + (partDto.getProject() != null ? partDto.getProject().getId().toString() : "N/A") +
                "\nCustomPart: " + (partDto.getCustomPart() != null ? partDto.getCustomPart().getCustomPart() : "N/A") +
                "\nMaterial: " + (partDto.getPartMaterial() != null ? partDto.getPartMaterial().getMaterialName() : "N/A") +
@@ -126,7 +125,15 @@ public class QRCodeService {
 
         // Cambiar el estado de la pieza a "recibida" y actualizar el scanDateTime
         part.setReceptionState(true);
-        part.setScanDateTime(LocalDateTime.now()); // Actualizamos con la fecha actual
+        part.setScanDateTime(LocalDateTime.now());
         return partRepository.save(part);
+    }
+
+    /**
+     * Método utilitario para verificar si un archivo QR existe.
+     */
+    public boolean qrFileExists(String fileName) {
+        Path qrPath = FileSystems.getDefault().getPath(qrDirectory, fileName);
+        return Files.exists(qrPath) && Files.isReadable(qrPath);
     }
 }

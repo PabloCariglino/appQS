@@ -22,11 +22,8 @@ public class PartService {
     @Autowired
     private PartRepository partRepository;
 
-    @Autowired
-    private QRCodeService qrCodeService;
-
     @Transactional
-    public Part createPart(Project project, PartDto partDto) throws IOException, WriterException {
+    public Part createPart(Project project, PartDto partDto) throws IOException {
         validatePartDto(partDto);
 
         Part part = new Part();
@@ -43,19 +40,11 @@ public class PartService {
         part.setHeightMm(partDto.getHeightMm());
         part.setWidthMm(partDto.getWidthMm());
         part.setObservations(partDto.getObservations());
-        part.setReceptionState(false); // Inicializar explícitamente en false
+        part.setReceptionState(false); // Inicializar en false
         part.setScanDateTime(null); // Dejar como null
 
-        // Guardar la pieza primero para obtener el ID
-        Part savedPart = partRepository.save(part);
-
-        // Generar el QR usando la pieza persistida
-        String qrData = qrCodeService.generateQrDataFromPart(savedPart);
-        String qrFilePath = qrCodeService.generateQRCodeImage(qrData, 300, 300, UUID.randomUUID() + "_part_qr.png");
-        savedPart.setQrCodeData(qrData);
-        savedPart.setQrCodeFilePath(qrFilePath);
-
-        return partRepository.save(savedPart); // Guardar nuevamente con el QR
+        // Guardar la pieza primero para obtener el ID, pero sin generar QR
+        return partRepository.save(part);
     }
 
     public Part updatePart(UUID id, PartDto partDto) throws IOException, WriterException {
@@ -66,14 +55,7 @@ public class PartService {
 
         populatePartData(existingPart, partDto);
 
-        // Regenerar el QR si cambia algo relevante
-        if (isQrDataChanged(existingPart, partDto)) {
-            String qrData = qrCodeService.generateQrDataFromPart(existingPart);
-            String qrFilePath = qrCodeService.generateQRCodeImage(qrData, 300, 300, UUID.randomUUID() + "_part_qr.png");
-            existingPart.setQrCodeData(qrData); // Actualizar el dato del QR
-            existingPart.setQrCodeFilePath(qrFilePath);
-        }
-
+        // No generamos QR aquí, delegamos a ProjectService si es necesario
         return partRepository.save(existingPart);
     }
 
@@ -93,7 +75,6 @@ public class PartService {
         partRepository.deleteById(id);
     }
 
-    // Validar los datos recibidos
     private void validatePartDto(PartDto partDto) {
         if (partDto.getCustomPart() == null) {
             throw new IllegalArgumentException("El nombre de la pieza personalizada no puede estar vacío.");
@@ -103,7 +84,6 @@ public class PartService {
         }
     }
 
-    // Poblar los datos de la pieza desde el DTO
     private void populatePartData(Part part, PartDto partDto) {
         part.setCustomPart(partDto.getCustomPart());
         part.setPartMaterial(partDto.getPartMaterial());
@@ -115,14 +95,8 @@ public class PartService {
         part.setObservations(partDto.getObservations());
         part.setPartState(partDto.getPartState());
         part.setQualityControlState(partDto.getQualityControlState());
-        part.setScanDateTime(null); // O asigna un valor por defecto si es necesario
-        part.setReceptionState(partDto.getReceptionState() != null ? partDto.getReceptionState() : false); // Valor por defecto
-    }
-
-    // Verificar si los datos relevantes del QR cambiaron
-    private boolean isQrDataChanged(Part part, PartDto partDto) {
-        return !part.getCustomPart().equals(partDto.getCustomPart())
-                || !part.getPartMaterial().equals(partDto.getPartMaterial());
+        part.setScanDateTime(partDto.getScanDateTime() != null ? partDto.getScanDateTime() : null);
+        part.setReceptionState(partDto.getReceptionState() != null ? partDto.getReceptionState() : false);
     }
 
     public Part scanPart(UUID id) {

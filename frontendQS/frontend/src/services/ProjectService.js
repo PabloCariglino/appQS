@@ -1,4 +1,4 @@
-// ProjectService.js
+// ProjectService.js (optimizado para Vite/React)
 import axios from "axios";
 import { getAccessToken } from "../auth/AuthService";
 
@@ -11,17 +11,23 @@ const instance = axios.create({
 // Interceptor para agregar el token JWT a todas las solicitudes
 instance.interceptors.request.use(
   (config) => {
-    const token = getAccessToken(); // Usar getAccessToken() en lugar de sessionStorage
+    const token = getAccessToken();
     if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`; // Agrega el token al encabezado
-      console.log("Token enviado en la solicitud:", token); // Log para verificar el token
+      config.headers["Authorization"] = `Bearer ${token}`;
+      if (import.meta.env.MODE === "development") {
+        console.log("Token enviado en la solicitud:", token); // Log solo en desarrollo
+      }
     } else {
-      console.warn("Token no disponible para la solicitud.");
+      if (import.meta.env.MODE === "development") {
+        console.warn("Token no disponible para la solicitud.");
+      }
     }
     return config;
   },
   (error) => {
-    console.error("Error en el interceptor de la solicitud:", error);
+    if (import.meta.env.MODE === "development") {
+      console.error("Error en el interceptor de la solicitud:", error);
+    }
     return Promise.reject(error);
   }
 );
@@ -30,26 +36,56 @@ instance.interceptors.request.use(
 const ProjectService = {
   // Crear un nuevo proyecto con las piezas
   createNewProject: async (projectDto, partDtos) => {
-    console.log("createNewProject: Creando un nuevo proyecto...");
+    if (import.meta.env.MODE === "development") {
+      console.log("createNewProject: Creando un nuevo proyecto...");
+    }
     const data = { project: projectDto, parts: partDtos };
-    return await handleServiceCall(() => instance.post("/create", data));
+    try {
+      const response = await instance.post("/create", data);
+      return {
+        success: true,
+        data: {
+          project: response.data, // El backend devuelve directamente el Project
+          parts: response.data.parts || [], // Asegúrate de que el backend devuelva las piezas con qrCodeFilePath
+        },
+      };
+    } catch (error) {
+      if (import.meta.env.MODE === "development") {
+        console.error(
+          "Error al crear proyecto:",
+          error.response?.data || error.message
+        );
+      }
+      return {
+        success: false,
+        message:
+          error.response?.data?.message ||
+          "Error desconocido al crear el proyecto",
+      };
+    }
   },
 
   // Obtener todos los proyectos
   fetchProjects: async () => {
-    console.log("fetchProjects: Realizando llamada al backend...");
+    if (import.meta.env.MODE === "development") {
+      console.log("fetchProjects: Realizando llamada al backend...");
+    }
     return await handleServiceCall(() => instance.get("/list"));
   },
 
   // Obtener un proyecto por ID
   fetchProjectById: async (id) => {
-    console.log(`fetchProjectById: Solicitando proyecto con ID: ${id}`);
+    if (import.meta.env.MODE === "development") {
+      console.log(`fetchProjectById: Solicitando proyecto con ID: ${id}`);
+    }
     return await handleServiceCall(() => instance.get(`/${id}`));
   },
 
   // Actualizar un proyecto
   updateProjectById: async (id, projectData) => {
-    console.log(`updateProjectById: Actualizando proyecto con ID: ${id}`);
+    if (import.meta.env.MODE === "development") {
+      console.log(`updateProjectById: Actualizando proyecto con ID: ${id}`);
+    }
     return await handleServiceCall(() =>
       instance.put(`/${id}/update`, projectData)
     );
@@ -60,11 +96,17 @@ const ProjectService = {
 const handleServiceCall = async (apiCall) => {
   try {
     const response = await apiCall();
-    console.log("handleServiceCall: Respuesta exitosa:", response);
+    if (import.meta.env.MODE === "development") {
+      console.log("handleServiceCall: Respuesta exitosa:", response.data);
+    }
     return { success: true, data: response.data };
   } catch (error) {
-    console.error("handleServiceCall: Error al realizar la llamada:", error);
-    console.error("Detalles del error:", error.response);
+    if (import.meta.env.MODE === "development") {
+      console.error(
+        "handleServiceCall: Error al realizar la llamada:",
+        error.response?.data || error.message
+      );
+    }
     return {
       success: false,
       message:

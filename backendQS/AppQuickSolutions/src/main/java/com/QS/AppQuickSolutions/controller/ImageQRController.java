@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,10 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/qr-codes")
 public class ImageQRController {
 
-    private final Path qrCodeDirectory = Paths.get("src/main/resources/qr-codes");
+    private final Path qrCodeDirectory = Paths.get("backenQS/src/main/resources/qr-codes");
 
     @GetMapping("/{filename}")
-    @PreAuthorize("isAuthenticated()") // Solo usuarios autenticados pueden acceder
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Resource> serveImage(@PathVariable String filename) {
         try {
             Path file = qrCodeDirectory.resolve(filename);
@@ -30,14 +31,13 @@ public class ImageQRController {
 
             if (resource.exists() && resource.isReadable()) {
                 return ResponseEntity.ok()
-                        .contentType(MediaType.IMAGE_PNG) // Ajusta el tipo de contenido según el formato de la imagen
+                        .contentType(MediaType.IMAGE_PNG)
                         .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
                         .body(resource);
-            } else {
-                return ResponseEntity.notFound().build();
             }
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } catch (IOException e) {
-            return ResponseEntity.internalServerError().body(null);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 }
