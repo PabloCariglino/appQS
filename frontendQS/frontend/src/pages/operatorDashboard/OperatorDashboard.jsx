@@ -1,4 +1,4 @@
-import ProjectList from "../components/project/ProjectList";
+import ProjectList from "../../components/project/ProjectList";
 
 const OperatorDashboard = () => {
   return (

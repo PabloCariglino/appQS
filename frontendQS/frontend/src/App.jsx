@@ -9,11 +9,10 @@ import CreateProject from "./components/project/CreateProject";
 import ProjectList from "./components/project/ProjectList";
 import RegisterUser from "./components/user/RegisterUser";
 import UserList from "./components/user/UserList";
-import Footer from "./fragments/Footer";
 import Navbar from "./fragments/Navbar";
-import AdminDashboard from "./pages/AdminDashboard";
-import Home from "./pages/Home";
-import OperatorDashboard from "./pages/OperatorDashboard";
+import AdminDashboard from "./pages/adminDashboard/page/AdminDashboard";
+import Home from "./pages/home/pages/Home";
+import OperatorDashboard from "./pages/operatorDashboard/OperatorDashboard";
 
 import PartMaterialList from "./components/material/PartMaterialList";
 import CustomPartList from "./components/partCustom/CustomPartList";
@@ -169,7 +168,7 @@ const App = () => {
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

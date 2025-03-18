@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../auth/AuthContext";
 import { getAccessToken } from "../../auth/AuthService";
 import BackButton from "../../fragments/BackButton";
-import ProjectService from "../../services/ProjectService";
+import ProjectService from "../../services/projectService";
 import styles from "./ProjectList.module.css";
 
 const ProjectList = () => {

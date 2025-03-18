@@ -1,0 +1,20 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* Home.css */
+/* Estilos personalizados específicos para el componente Home */
+
+/* Hero Section con fondo personalizado (gradiente radial y imagen fija) */
+.hero-section {
+  background-image: radial-gradient(
+      circle,
+      rgba(0, 0, 0, 0.3),
+      rgba(0, 0, 0, 0.6)
+    ),
+    url("/assets/fondo-home3.jpg");
+  background-size: cover;
+  background-attachment: fixed;
+  background-position: center;
+  background-repeat: no-repeat;
+}

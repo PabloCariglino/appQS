@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
 import BackButton from "../../fragments/BackButton";
-import ProjectService from "../../services/ProjectService";
+import ProjectService from "../../services/projectService";
 
 const ProjectDetail = () => {
   const { id } = useParams();

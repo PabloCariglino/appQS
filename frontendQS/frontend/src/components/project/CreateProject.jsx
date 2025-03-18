@@ -3,9 +3,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
 import { getAccessToken } from "../../auth/AuthService"; // Importar getAccessToken
 import BackButton from "../../fragments/BackButton";
-import CustomPartService from "../../services/CustomPartService";
-import PartMaterialService from "../../services/PartMaterialService";
-import ProjectService from "../../services/ProjectService";
+import CustomPartService from "../../services/customPartService";
+import PartMaterialService from "../../services/partMaterialService";
+import ProjectService from "../../services/projectService";
 import styles from "./CreateProject.module.css";
 
 function CreateProject() {

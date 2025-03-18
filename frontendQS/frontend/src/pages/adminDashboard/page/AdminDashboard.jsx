@@ -1,4 +1,5 @@
 //AdminDashboard.jsx
+import { getAccessToken } from "@/auth/authService";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
@@ -6,8 +7,7 @@ import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { useEffect, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
-import { getAccessToken } from "../auth/AuthService";
-import EventService from "../services/EventService";
+import EventService from "../../../services/EventService";
 import styles from "./AdminDashboard.module.css";
 
 const AdminDashboard = () => {
