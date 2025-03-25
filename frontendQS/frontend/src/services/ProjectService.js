@@ -90,6 +90,16 @@ const ProjectService = {
       instance.put(`/${id}/update`, projectData)
     );
   },
+
+  // Actualizar un proyecto
+  updateProject: async (id, projectData) => {
+    if (import.meta.env.MODE === "development") {
+      console.log(`updateProject: Actualizando proyecto con ID: ${id}`);
+    }
+    return await handleServiceCall(() =>
+      instance.patch(`/${id}/update`, projectData)
+    );
+  },
 };
 
 // Manejo centralizado de errores y respuesta

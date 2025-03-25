@@ -19,6 +19,9 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Inter", "sans-serif"], // Establece "Inter" como fuente predeterminada
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
@@ -67,6 +70,12 @@ export default {
           DEFAULT: "#FF3A2F",
           dark: "#CC2E25",
           light: "#FF6B63",
+        },
+        dashboard: {
+          background: "#F8F9FA", // Fondo claro para dashboards, amigable a la vista
+          text: "#343A40", // Texto gris oscuro
+          border: "#E5E7EB", // Bordes grises claros
+          navbar: "#1A2526", // Color del navbar y footer del dashboard
         },
       },
       borderRadius: {

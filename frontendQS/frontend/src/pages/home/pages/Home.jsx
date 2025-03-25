@@ -1,17 +1,15 @@
-import { motion } from "framer-motion"; // Asegúrate de tener framer-motion instalado
+import { motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
-import "../Home.css"; // Importamos Home.css para estilos personalizados
+import "../Home.css";
+import FooterPublic from "./../components/FooterPublic";
+import NavbarPublic from "./../components/NavbarPublic";
 
 const Home = () => {
-  const [showNavbar, setShowNavbar] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      // Mostrar el navbar apenas el usuario empieza a scrollear (scrollY > 0)
-      setShowNavbar(window.scrollY > 0);
-
-      // Mostrar el botón de scroll top después de pasar la sección Hero (h-screen)
       const heroSection = document.querySelector(".hero-section");
       if (heroSection) {
         const heroBottom = heroSection.getBoundingClientRect().bottom;
@@ -48,8 +46,7 @@ const Home = () => {
     }
   };
 
-  // URL de WhatsApp con el número de la empresa (ajústalo al número real)
-  const whatsappNumber = "+541112345678"; // Reemplaza con el número de tu empresa
+  const whatsappNumber = "+541112345678";
   const whatsappMessage = "¡Hola! Quiero más información sobre sus servicios.";
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
     whatsappMessage
@@ -57,60 +54,19 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-white text-gray-800 font-sans">
-      {/* Navbar con transición lenta */}
-      <motion.nav
-        className="fixed top-0 left-0 w-full bg-white shadow-md z-50 py-4 px-10 flex justify-between items-center"
-        initial={{ y: -100, opacity: 0 }} // Comienza fuera de la vista
-        animate={{ y: showNavbar ? 0 : -100, opacity: showNavbar ? 1 : 0 }} // Transición al scrollear
-        transition={{ duration: 0.6, ease: "easeInOut" }} // Transición más lenta (0.6s)
-      >
-        <div className="flex items-center">
-          <img src="/assets/LOGO-sin-fondo2.png" alt="Logo" className="h-12" />
-        </div>
-        <div className="space-x-6">
-          <a
-            href="#inicio"
-            className="text-gray-800 hover:text-grill transition-colors duration-300"
-          >
-            Inicio
-          </a>
-          <a
-            href="#servicios"
-            className="text-gray-800 hover:text-grill transition-colors duration-300"
-          >
-            Servicios
-          </a>
-          <a
-            href="#proyectos"
-            className="text-gray-800 hover:text-grill transition-colors duration-300"
-          >
-            Proyectos
-          </a>
-          <a
-            href="#contacto"
-            className="text-gray-800 hover:text-grill transition-colors duration-300"
-          >
-            Contacto
-          </a>
-          <a
-            href="#login"
-            className="bg-grill text-white px-4 py-2 rounded hover:bg-grill-dark transition-colors duration-300"
-          >
-            Login
-          </a>
-        </div>
-      </motion.nav>
+      {/* Usamos el componente NavbarPublic */}
+      <NavbarPublic />
 
       {/* Hero Section */}
-      <section className="hero-section relative h-screen">
-        <div className="absolute inset-0 bg-black opacity-50"></div>
-        <div className="relative z-10 flex items-center h-full justify-between px-10">
-          <div className="text-white text-left">
+      <section id="inicio" className="hero-section relative h-screen">
+        <div className="absolute inset-0 bg-black opacity-30"></div>
+        <div className="relative z-10 flex items-center h-full justify-center px-10 gap-72">
+          <div className="text-white text-left max-w-md">
             <h1 className="text-6xl font-bold mb-4 leading-tight">
               Frentes <span className="block">de parrilla</span>{" "}
               <span className="text-grill block">a medida</span>
             </h1>
-            <div className="space-y-2 text-lg">
+            <div className="space-y-3 text-lg">
               <p>✓ Cotización en 24hs</p>
               <p>✓ Asesoramiento personalizado</p>
               <p>✓ Envío y colocación</p>
@@ -119,17 +75,26 @@ const Home = () => {
               <button className="bg-grill text-white px-6 py-2 rounded hover:bg-grill-dark transition-colors duration-300">
                 Solicitar cotización
               </button>
-              <button className="border border-white text-white px-6 py-2 rounded hover:bg-white hover:text-gray-800 transition-colors duration-300">
+              <button className="border border-white text-white px-6 py-2 rounded hover:bg-black hover:text-black transition-colors duration-300">
                 Ver servicios
               </button>
             </div>
           </div>
           <img
-            src="/assets/QUICK-solutions-logo.png"
+            src="public/assets/LOGO-sin-fondo2.png"
             alt="Quick Solutions Logo"
-            className="h-80"
+            className="h-80 drop-shadow-[0_0_15px_rgba(255,255,255,0.9)]"
           />
         </div>
+        {/* Flecha para scrollear hacia abajo */}
+        <motion.div
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
+          initial={{ y: 0 }}
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ChevronDown className="w-10 h-10 text-white opacity-80 hover:opacity-100 transition-opacity duration-300" />
+        </motion.div>
       </section>
 
       {/* Servicios Section */}
@@ -148,7 +113,6 @@ const Home = () => {
             whileHover={{ y: -10, transition: { duration: 0.3 } }}
           >
             <div className="text-grill mb-4 text-2xl">📏</div>
-
             <h3 className="text-xl font-semibold mb-2">Diseño a medida</h3>
             <p className="text-gray-600">
               Creamos frentes de parrilla que se adaptan perfectamente a tu
@@ -161,7 +125,6 @@ const Home = () => {
             whileHover={{ y: -10, transition: { duration: 0.3 } }}
           >
             <div className="text-grill mb-4 text-2xl">🔥</div>
-
             <h3 className="text-xl font-semibold mb-2">
               Materiales de alta calidad
             </h3>
@@ -175,7 +138,6 @@ const Home = () => {
             whileHover={{ y: -10, transition: { duration: 0.3 } }}
           >
             <div className="text-grill mb-4 text-2xl">🔧</div>
-
             <h3 className="text-xl font-semibold mb-2">
               Instalación profesional
             </h3>
@@ -189,7 +151,6 @@ const Home = () => {
             whileHover={{ y: -10, transition: { duration: 0.3 } }}
           >
             <div className="text-grill mb-4 text-2xl">👤</div>
-
             <h3 className="text-xl font-semibold mb-2">
               Asesoramiento personalizado
             </h3>
@@ -204,7 +165,6 @@ const Home = () => {
             whileHover={{ y: -10, transition: { duration: 0.3 } }}
           >
             <div className="text-grill mb-4 text-2xl">🚚</div>
-
             <h3 className="text-xl font-semibold mb-2">Envío y colocación</h3>
             <p className="text-gray-600">
               Nos encargamos de la logística completa, llevando todo lo
@@ -217,7 +177,6 @@ const Home = () => {
             whileHover={{ y: -10, transition: { duration: 0.3 } }}
           >
             <div className="text-grill mb-4 text-2xl">🛡️</div>
-
             <h3 className="text-xl font-semibold mb-2">Garantía y soporte</h3>
             <p className="text-gray-600">
               Todos nuestros trabajos cuentan con garantía y ofrecemos servicio
@@ -505,7 +464,7 @@ const Home = () => {
                   fill="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10S6.486 2 12 2zm0 2c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 3a5 5 0 110 10 5 5 0 010-10zm0 2a3 3 0 100 6 3 3 0 000-6zm5.293-.293a1 1 0 011.414 1.414l-1.5 1.5a1 1 0 01-1.414-1.414l1.5-1.5z" />
+                  <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10-10S6.486 2 12 2zm0 2c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 3a5 5 0 110 10 5 5 0 010-10zm0 2a3 3 0 100 6 3 3 0 000-6zm5.293-.293a1 1 0 011.414 1.414l-1.5 1.5a1 1 0 01-1.414-1.414l1.5-1.5z" />
                 </svg>
               </a>
               <a href="#" className="text-grill hover:text-grill-dark">
@@ -522,140 +481,8 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-[#1A202C] text-white py-6 px-10">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-          <div>
-            <p>
-              Especialistas en el diseño, fabricación e instalación de frentes
-              de parrillas a medida para su hogar, garantizando calidad y
-              durabilidad.
-            </p>
-            <div className="flex justify-start space-x-4 mt-4">
-              <a href="#" className="text-white hover:text-grill">
-                <svg
-                  className="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.563V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
-                </svg>
-              </a>
-              <a href="#" className="text-white hover:text-grill">
-                <svg
-                  className="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10S6.486 2 12 2zm0 2c-4.411 0-8 3.589-8 8s3.589 8 8 8 8-3.589 8-8-3.589-8-8-8zm0 3a5 5 0 110 10 5 5 0 010-10zm0 2a3 3 0 100 6 3 3 0 000-6zm5.293-.293a1 1 0 011.414 1.414l-1.5 1.5a1 1 0 01-1.414-1.414l1.5-1.5z" />
-                </svg>
-              </a>
-              <a href="#" className="text-white hover:text-grill">
-                <svg
-                  className="w-6 h-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M22.459 4.79c-.81.36-1.68.61-2.59.72A4.52 4.52 0 0021.85 2.8a9.05 9.05 0 01-2.87 1.1 4.51 4.51 0 00-7.68 4.11 12.79 12.79 0 01-9.3-4.71 4.51 4.51 0 001.39 6.02 4.49 4.49 0 01-2.04-.56v.06a4.51 4.51 0 003.62 4.42 4.49 4.49 0 01-2.03.08 4.51 4.51 0 004.21 3.13 9.05 9.05 0 01-5.6 1.93c-.36 0-.72-.02-1.07-.06a12.77 12.77 0 006.92 2.03c8.31 0 12.85-6.88 12.85-12.85 0-.2 0-.39-.01-.58a9.16 9.16 0 002.25-2.33z" />
-                </svg>
-              </a>
-            </div>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Servicios</h4>
-            <ul className="space-y-1">
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Diseño personalizado
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Fabricación de frentes
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Instalación profesional
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Mantenimiento y reparación
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Accesorios para parrillas
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Enlaces rápidos</h4>
-            <ul className="space-y-1">
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Sobre nosotros
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Proyectos realizados
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Testimonios
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Preguntas frecuentes
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-grill">
-                  Contacto
-                </a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-2">Contacto</h4>
-            <ul className="space-y-1">
-              <li>
-                <a href="#" className="text-gray-400 flex items-center">
-                  <span className="text-grill mr-2">📍</span> Av. Principal
-                  1234, Buenos Aires, Argentina
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 flex items-center">
-                  <span className="text-grill mr-2">📞</span> +54 11 1234-5678
-                </a>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 flex items-center">
-                  <span className="text-grill mr-2">📧</span>{" "}
-                  info@quicksolutions.com
-                </a>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <p className="mt-6 text-gray-400 text-center">
-          © 2025 Quick Solutions. Todos los derechos reservados.
-        </p>
-        <div className="mt-2 space-x-4 text-center">
-          <a href="#" className="text-gray-400 hover:text-grill">
-            Términos de servicio
-          </a>
-          <a href="#" className="text-gray-400 hover:text-grill">
-            Política de privacidad
-          </a>
-        </div>
-      </footer>
+      {/* Usamos el componente FooterPublic */}
+      <FooterPublic />
 
       {/* Botón de WhatsApp (fijo abajo a la izquierda) */}
       <a
@@ -670,7 +497,7 @@ const Home = () => {
           viewBox="0 0 24 24"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path d="M12 2C6.486 2 2 6.486 2 12c0 2.126.667 4.097 1.803 5.708L2.5 21.5l4.791-1.303A9.969 9.969 0 0012 22c5.514 0 10-4.486 10-10S17.514 2 12 2zm4.5 13.5c-.133-.266-.667-.667-1.5-1.167-.833-.5-1.5-.833-1.666-.916-.167-.083-.334-.125-.5-.125s-.334.042-.5.125c-.166.083-.833.416-1.666.916-.833.5-1.367 1-1.5 1.167-.133.166-.227.25-.283.25-.059 0-.159-.084-.3-.25-.141-.166-1.041-1.208-2.541-2.708-1.5-1.5-2-2.625-2-3.25 0-.625.416-1.125 1.25-1.5.833-.375 1.75-.541 2.75-.541.916 0 1.75.25 2.5.75.75.5 1.25 1.083 1.5 1.583.25.5.375.916.375 1.25 0 .334-.083.708-.25 1.125-.167.417-.375.792-.625 1.125-.083.083-.166.167-.25.25.458.458.875.958 1.25 1.5.375.542.625 1.042.75 1.5.083.375.125.708.125 1 0 .584-.208 1.083-.625 1.5-.416.416-1.042.625-1.875.625z" />
+          <path d="M12 0C5.373 0 0 5.373 0 12c0 2.559.81 4.934 2.176 6.882L0 24l5.25-1.688A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22.001a9.95 9.95 0 01-5.092-1.404l-.364-.218-3.115 1.002 1.02-3.042-.235-.39A9.956 9.956 0 012 12c0-5.514 4.486-10 10-10s10 4.486 10 10-4.486 10-10 10zm5.794-6.583l-.36-.18a2.5 2.5 0 01-.894-.894c-.18-.36-.18-.894 0-1.254.18-.36.54-.72.894-.894l.36-.18c.36-.18.72-.18 1.074 0 .36.18.72.54.894 1.074 0 .36-.18.72-.36 1.074-.36.36-.72.54-1.074.54-.36 0-.72-.18-1.074-.36l-.36-.18zm-2.508-1.254c-.18 0-.36-.18-.54-.36-.18-.18-.18-.36-.18-.54 0-.18.18-.36.36-.54.18-.18.36-.18.54-.18.18 0 .36.18.54.36.18.18.18.36.18.54 0 .18-.18.36-.36.54-.18.18-.36.18-.54.18zm-5.028 0c-.18 0-.36-.18-.54-.36-.18-.18-.18-.36-.18-.54 0-.18.18-.36.36-.54.18-.18.36-.18.54-.18.18 0 .36.18.54.36.18.18.18.36.18.54 0 .18-.18.36-.36.54-.18.18-.36.18-.54.18zm-2.508-1.254c-.36.18-.72.54-1.074 1.074-.18.36-.36.72-.36 1.074 0 .36.18.72.36 1.074.36.36.72.54 1.074.54.36 0 .72-.18 1.074-.36l.36-.18c.36-.18.72-.54.894-.894.18-.36.18-.894 0-1.254-.18-.36-.54-.72-.894-.894l-.36-.18c-.36-.18-.72-.18-1.074 0z" />
         </svg>
       </a>
 
@@ -678,9 +505,9 @@ const Home = () => {
       <motion.button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         className="fixed bottom-6 right-6 bg-grill text-white p-3 rounded-full hover:bg-grill-dark transition-colors duration-300 z-50"
-        initial={{ y: 50, opacity: 0 }} // Comienza desplazado hacia abajo y con opacidad 0
-        animate={{ y: showScrollTop ? 0 : 50, opacity: showScrollTop ? 1 : 0 }} // Transición al aparecer/desaparecer
-        transition={{ duration: 0.6, ease: "easeInOut" }} // Transición más lenta (0.6s)
+        initial={{ y: 50, opacity: 0 }}
+        animate={{ y: showScrollTop ? 0 : 50, opacity: showScrollTop ? 1 : 0 }}
+        transition={{ duration: 0.6, ease: "easeInOut" }}
       >
         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
           <path

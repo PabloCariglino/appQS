@@ -27,7 +27,7 @@ import io.jsonwebtoken.io.IOException;
 
 @RestController
 @RequestMapping("/api/images")
-public class ImageController {
+public class ImageCustomPartController {
 
     @Value("${file.upload-dir}")
     private String uploadDir;

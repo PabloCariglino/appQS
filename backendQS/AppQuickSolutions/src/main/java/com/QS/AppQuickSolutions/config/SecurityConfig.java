@@ -40,9 +40,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**", "/", "/login","/uploads/**", "/static/**").permitAll()
                 .requestMatchers("/api/part/**", "/api/project/**", "/api/project/projects-list").hasAnyRole("ADMIN", "OPERATOR")
                 .requestMatchers("/api/project/projects/list", "/api/project/create", "/api/events/**","/api/part-materials/**",
-                "/api/customParts/**","/api/part/**").hasRole("ADMIN")
-                // .requestMatchers("/qr-codes/**","/api/qr/generate-qr").authenticated() 
-                .requestMatchers("/api/user-dashboard/**","/qr-codes/**", "/api/**","/api/qr/generate-qr").authenticated()
+                "/api/customParts/**","/api/part/**","/qr-codes/**","/api/qr/**","/api/project/**").hasRole("ADMIN")
+                .requestMatchers("/api/user-dashboard/**","/qr-codes/**", "/api/**").authenticated()
                 .anyRequest().authenticated()
             
 

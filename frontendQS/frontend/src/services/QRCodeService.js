@@ -1,9 +1,8 @@
-// QrCodeService.js
 import axios from "axios";
 import { getAccessToken } from "../auth/AuthService";
 
 // Configuración base de Axios para QR
-const API_URL = "http://localhost:8080/api/qr";
+const API_URL = "http://localhost:8080";
 const instance = axios.create({
   baseURL: API_URL,
 });
@@ -11,10 +10,10 @@ const instance = axios.create({
 // Interceptor para agregar el token JWT a todas las solicitudes
 instance.interceptors.request.use(
   (config) => {
-    const token = getAccessToken(); // Usar getAccessToken() en lugar de sessionStorage
+    const token = getAccessToken();
     if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`; // Agrega el token al encabezado
-      console.log("Token enviado en la solicitud:", token); // Log para verificar el token
+      config.headers["Authorization"] = `Bearer ${token}`;
+      console.log("Token enviado en la solicitud:", token);
     } else {
       console.warn("Token no disponible para la solicitud.");
     }
@@ -29,37 +28,47 @@ instance.interceptors.request.use(
 // Función para generar el QR
 const generateQRCode = async (partData) => {
   console.log("generateQRCode: Generando código QR...");
-  return await handleServiceCall(
-    () => instance.post("/generate-qr", partData) // Envía el objeto partData completo
+  return await handleServiceCall(() =>
+    instance.post("/api/qr/generate-qr", partData)
   );
 };
 
 // Obtener QR por archivo
 const getQRCodeImage = async (filename) => {
-  console.log("getQRCodeImage: Obteniendo imagen del QR...");
-  const token = getAccessToken(); // Asegúrate de obtener el token JWT
-  return await handleServiceCall(() =>
-    instance.get(`/qr-codes/${filename}`, {
-      headers: {
-        Authorization: `Bearer ${token}`, // Pasar el token en la cabecera
-      },
-    })
-  );
+  console.log("getQRCodeImage: Obteniendo imagen del QR para", filename);
+  const token = getAccessToken();
+  if (!token) {
+    console.error("No hay token disponible para la solicitud de QR");
+    return { success: false, message: "No hay token disponible (401)" };
+  }
+  try {
+    const response = await instance.get(`/qr-codes/${filename}`, {
+      responseType: "blob",
+    });
+    return { success: true, data: response.data };
+  } catch (error) {
+    console.error("Error al obtener la imagen del QR:", error);
+    if (error.response && error.response.status === 401) {
+      console.error("Sesión expirada detectada en getQRCodeImage (401)");
+      return { success: false, message: "Sesión expirada (401)" };
+    }
+    return { success: false, message: error.message };
+  }
 };
 
 // Eliminar QR por ID
 const deleteQRCode = async (qrCodeId) => {
   console.log(`deleteQRCode: Eliminando QR con ID: ${qrCodeId}`);
-  return await handleServiceCall(
-    () => instance.delete(`/delete-qr/${qrCodeId}`) // Llama al backend para eliminar el QR
+  return await handleServiceCall(() =>
+    instance.delete(`/api/qr/delete-qr/${qrCodeId}`)
   );
 };
 
-// Funciones adicionales para gestionar el CRUD de QR
+// Actualizar QR
 const updateQRCode = async (qrCodeId, qrData) => {
   console.log(`updateQRCode: Actualizando QR con ID: ${qrCodeId}`);
-  return await handleServiceCall(
-    () => instance.put(`/update-qr/${qrCodeId}`, qrData) // Actualiza el QR con nuevos datos
+  return await handleServiceCall(() =>
+    instance.put(`/api/qr/update-qr/${qrCodeId}`, qrData)
   );
 };
 

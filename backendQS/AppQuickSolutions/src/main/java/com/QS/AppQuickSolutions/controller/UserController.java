@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -112,4 +113,15 @@ public class UserController {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
         return ResponseEntity.ok(user.getRole().name()); // Retorna el rol como String
     }
+
+    @DeleteMapping("/delete-user/{id}")
+@PreAuthorize("hasRole('ADMIN')") // Solo ADMIN puede eliminar usuarios
+public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+    try {
+        userService.deleteUser(id);
+        return ResponseEntity.ok("Usuario eliminado correctamente.");
+    } catch (RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+    }
+}
 }

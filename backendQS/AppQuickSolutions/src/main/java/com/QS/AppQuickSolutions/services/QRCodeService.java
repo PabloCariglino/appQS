@@ -1,7 +1,6 @@
 package com.QS.AppQuickSolutions.services;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -55,12 +54,12 @@ public class QRCodeService {
 
     /**
      * Genera la imagen del QR y devuelve la ruta del archivo.
-    */
+     */
     public String generateQRCodeImage(String qrData, int width, int height, String fileName) throws WriterException, IOException {
         Map<EncodeHintType, Object> hints = new HashMap<>();
         hints.put(EncodeHintType.CHARACTER_SET, "UTF-8");
-    
-       Path qrPathDirectory = Paths.get(qrDirectory).toAbsolutePath(); // Usar path absoluto
+
+        Path qrPathDirectory = Paths.get(qrDirectory).toAbsolutePath(); // Usar path absoluto
         if (!Files.exists(qrPathDirectory)) {
             Files.createDirectories(qrPathDirectory);
         }
@@ -89,7 +88,8 @@ public class QRCodeService {
      */
     public String generateQRCodeForPartDto(PartDto partDto) throws WriterException, IOException {
         String qrData = generateQrDataFromPartDto(partDto);
-        return generateQRCodeImage(qrData, 300, 300, UUID.randomUUID() + "_part_qr.png");
+        String fileName = partDto.getId() != null ? partDto.getId() + "_part_qr.png" : UUID.randomUUID() + "_part_qr.png";
+        return generateQRCodeImage(qrData, 300, 300, fileName);
     }
 
     /**
@@ -133,7 +133,43 @@ public class QRCodeService {
      * Método utilitario para verificar si un archivo QR existe.
      */
     public boolean qrFileExists(String fileName) {
-        Path qrPath = FileSystems.getDefault().getPath(qrDirectory, fileName);
+        Path qrPath = Paths.get(qrDirectory, fileName);
         return Files.exists(qrPath) && Files.isReadable(qrPath);
+    }
+
+    /**
+     * Elimina un archivo QR del sistema de archivos.
+     */
+    public void deleteQRCode(String qrCodeId) throws IOException {
+        String fileName = qrCodeId + "_part_qr.png";
+        Path qrPath = Paths.get(qrDirectory, fileName);
+        if (Files.exists(qrPath)) {
+            Files.delete(qrPath);
+        } else {
+            throw new IOException("El archivo QR no existe: " + fileName);
+        }
+    }
+
+    /**
+     * Obtiene los datos de un QR (lee el archivo y devuelve el nombre del archivo).
+     */
+    public String getQRCode(String qrCodeId) throws IOException {
+        String fileName = qrCodeId + "_part_qr.png";
+        Path qrPath = Paths.get(qrDirectory, fileName);
+        if (Files.exists(qrPath)) {
+            return fileName;
+        } else {
+            throw new IOException("El archivo QR no existe: " + fileName);
+        }
+    }
+
+    /**
+     * Actualiza un QR existente (elimina el anterior y genera uno nuevo).
+     */
+    public String updateQRCode(String qrCodeId, PartDto partDto) throws WriterException, IOException {
+        // Eliminar el QR existente
+        deleteQRCode(qrCodeId);
+        // Generar un nuevo QR con los datos actualizados
+        return generateQRCodeForPartDto(partDto);
     }
 }

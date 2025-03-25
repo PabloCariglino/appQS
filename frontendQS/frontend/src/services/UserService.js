@@ -92,6 +92,18 @@ const UserService = {
     }
   },
 
+  deleteUser: async (id) => {
+    try {
+      console.log(`Intentando eliminar usuario con ID: ${id}`);
+      const response = await instance.delete(`/delete-user/${id}`);
+      console.log("Respuesta del backend (eliminar usuario):", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error al eliminar usuario:", error.response || error);
+      throw error;
+    }
+  },
+
   findUserByEmail: async (email) => {
     try {
       console.log(`Intentando buscar usuario con email: ${email}`);

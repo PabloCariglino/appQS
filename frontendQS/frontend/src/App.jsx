@@ -1,22 +1,20 @@
 import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import OperatorDashboard from "./../src/pages/operatorDashboard/page/OperatorDashboard";
 import { getRoleFromToken, isAuthenticated } from "./auth/AuthService";
-import Login from "./auth/Login";
-import useAuthContext from "./auth/useAuthContext";
+import useAuthContext from "./auth/UseAuthContext";
 import AddPartMaterial from "./components/material/AddPartMaterial";
+import PartMaterialList from "./components/material/PartMaterialList";
 import AddCustomPart from "./components/partCustom/AddCustomPart";
+import CustomPartList from "./components/partCustom/CustomPartList";
 import CreateProject from "./components/project/CreateProject";
+import ProjectDetail from "./components/project/ProjectDetail";
 import ProjectList from "./components/project/ProjectList";
 import RegisterUser from "./components/user/RegisterUser";
 import UserList from "./components/user/UserList";
-import Navbar from "./fragments/Navbar";
 import AdminDashboard from "./pages/adminDashboard/page/AdminDashboard";
 import Home from "./pages/home/pages/Home";
-import OperatorDashboard from "./pages/operatorDashboard/OperatorDashboard";
-
-import PartMaterialList from "./components/material/PartMaterialList";
-import CustomPartList from "./components/partCustom/CustomPartList";
-import ProjectDetail from "./components/project/ProjectDetail";
+import Login from "./pages/home/pages/Login";
 
 const App = () => {
   const { isLoggedIn, role, setRole, setIsLoggedIn } = useAuthContext();
@@ -54,7 +52,6 @@ const App = () => {
 
   return (
     <div>
-      <Navbar />
       {redirectIfNeeded()}
       <Routes>
         <Route path="/" element={<Home />} />
@@ -146,7 +143,7 @@ const App = () => {
           }
         />
         <Route
-          path="/project-detail"
+          path="/projects/:id"
           element={
             isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
               <ProjectDetail />
@@ -155,7 +152,6 @@ const App = () => {
             )
           }
         />
-
         <Route
           path="/operator"
           element={
@@ -168,7 +164,6 @@ const App = () => {
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-      {/* <Footer /> */}
     </div>
   );
 };
