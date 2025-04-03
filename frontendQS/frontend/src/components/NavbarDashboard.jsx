@@ -92,12 +92,22 @@ function Navbar() {
                   Inicio
                 </button>
               </li>
+              {isLoggedIn && role === "ADMIN" && (
+                <li className="my-1 md:my-0">
+                  <Link
+                    to="/project-list"
+                    className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                  >
+                    Proyectos
+                  </Link>
+                </li>
+              )}
               <li className="my-1 md:my-0">
                 <Link
-                  to="/project-list"
+                  to="/part-scanner"
                   className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
                 >
-                  Proyectos
+                  Escanear Piezas
                 </Link>
               </li>
             </>
@@ -112,6 +122,7 @@ function Navbar() {
               </Link>
             </li>
           )}
+
           {!isLoggedIn && (
             <li className="my-1 md:my-0">
               <Link

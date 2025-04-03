@@ -1,6 +1,7 @@
 package com.QS.AppQuickSolutions.entity;
 
-import jakarta.persistence.Column;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -11,24 +12,22 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-@Entity
-@Data
-@NoArgsConstructor
 @AllArgsConstructor
+@NoArgsConstructor
 @Getter
 @Setter
-public class CustomPart {
-
-
+@Data
+@Entity
+public class ScannedPart {
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column( name = "custom_part_name",unique = true, nullable = false)
-    private String customPartName;
-
-    private String imageFilePath; // Ruta relativa o nombre del archivo de la imagen asociada
-
-
-    
+    private String projectId;
+    private String projectNumber;
+    private String partId;
+    private String partName;
+    private String imageUrl;
+    private LocalDateTime scanDateTime;
 }

@@ -1,53 +1,45 @@
-import axios from "axios";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
+import CustomPartService from "../../services/CustomPartService";
 import BackButton from "../BackButton";
 import FooterDashboard from "./../FooterDashboard";
 import NavbarDashboard from "./../NavbarDashboard";
 
 const AddCustomPart = () => {
-  const [customPart, setCustomPart] = useState("");
+  const [customPartName, setCustomPartName] = useState("");
   const [imageFile, setImageFile] = useState(null);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const formData = new FormData();
-    formData.append("customPart", customPart);
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
-
+  // Verificar autenticación al cargar el componente
+  useEffect(() => {
     const token = getAccessToken();
     if (!token) {
       setError("No estás autenticado. Por favor, inicia sesión.");
+      // No redirigimos, solo mostramos el error
+    }
+  }, []);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!customPartName.trim()) {
+      setError("El nombre de la pieza es obligatorio.");
       return;
     }
 
     try {
-      const response = await axios.post(
-        "http://localhost:8080/api/customParts",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-      if (response.status === 201) {
-        setSuccess(true);
-        setError("");
-        setCustomPart("");
-        setImageFile(null);
-        navigate("/project-list");
-      }
+      await CustomPartService.createCustomPart(customPartName, imageFile);
+      setSuccess(true);
+      setError("");
+      setCustomPartName("");
+      setImageFile(null);
+      navigate("/partCustom-list");
     } catch (err) {
       setError(
-        "Error al agregar la pieza personalizada. Inténtelo nuevamente."
+        err.response?.data?.message ||
+          "Error al agregar la pieza personalizada. Inténtelo nuevamente."
       );
       console.error("Frontend Error:", err.response?.data || err.message);
     }
@@ -82,8 +74,8 @@ const AddCustomPart = () => {
               <input
                 type="text"
                 placeholder="Ingrese el nombre de la pieza"
-                value={customPart}
-                onChange={(e) => setCustomPart(e.target.value)}
+                value={customPartName}
+                onChange={(e) => setCustomPartName(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
                 required
               />
@@ -113,7 +105,6 @@ const AddCustomPart = () => {
           </form>
         </div>
 
-        {/* Botón Volver centrado */}
         <div className="mt-6 flex justify-center">
           <BackButton />
         </div>

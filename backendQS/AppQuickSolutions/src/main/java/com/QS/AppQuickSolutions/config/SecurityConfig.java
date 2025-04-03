@@ -33,37 +33,37 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/auth/**", "/", "/login","/uploads/**", "/static/**").permitAll()
-                .requestMatchers("/api/part/**", "/api/project/**", "/api/project/projects-list").hasAnyRole("ADMIN", "OPERATOR")
-                .requestMatchers("/api/project/projects/list", "/api/project/create", "/api/events/**","/api/part-materials/**",
-                "/api/customParts/**","/api/part/**","/qr-codes/**","/api/qr/**","/api/project/**").hasRole("ADMIN")
-                .requestMatchers("/api/user-dashboard/**","/qr-codes/**", "/api/**").authenticated()
-                .anyRequest().authenticated()
-            
-
-            )
-            .exceptionHandling(exception -> exception
-            .accessDeniedHandler(customAccessDeniedHandler()) // Invoca el manejador de acceso denegado
+    http
+        .csrf(csrf -> csrf.disable())
+        .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+        .authorizeHttpRequests(authz -> authz
+            .requestMatchers("/api/auth/**", "/", "/login", "/static/**").permitAll()
+            .requestMatchers("/api/part/**", "/api/project/**", "/api/project/projects-list").hasAnyRole("ADMIN", "OPERATOR")
+            .requestMatchers("/image-custom-part/**").hasAnyRole("ADMIN", "OPERATOR") // Proteger las imágenes de CustomPart
+            .requestMatchers("/qr-codes/**").hasAnyRole("ADMIN", "OPERATOR") // Ajustar para los QR
+            .requestMatchers("/api/project/projects/list", "/api/project/create", "/api/events/**", "/api/part-materials/**",
+                "/api/customParts/**", "/api/qr/**", "/api/project/**", "/api/images/**").hasRole("ADMIN")
+            .requestMatchers("/api/user-dashboard/**", "/api/**").authenticated()
+            .anyRequest().authenticated()
         )
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            )
-            .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID")
-                .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler())
-            )
-            .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
+        .exceptionHandling(exception -> exception
+            .accessDeniedHandler(customAccessDeniedHandler())
+        )
+        .sessionManagement(session -> session
+            .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+        )
+        .logout(logout -> logout
+            .logoutUrl("/api/auth/logout")
+            .invalidateHttpSession(true)
+            .deleteCookies("JSESSIONID")
+            .logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler())
+        )
+        .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
-        System.out.println("SecurityFilterChain initialized");
+    System.out.println("SecurityFilterChain initialized");
 
-        return http.build();
-    }
+    return http.build();
+}
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {

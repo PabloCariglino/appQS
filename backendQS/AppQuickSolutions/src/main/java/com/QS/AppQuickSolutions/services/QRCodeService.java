@@ -42,7 +42,7 @@ public class QRCodeService {
 
         return "Part ID: " + (part.getId() != null ? part.getId().toString() : "N/A") +
                "\nProject ID: " + (part.getProject() != null ? part.getProject().getId().toString() : "N/A") +
-               "\nCustomPart: " + (part.getCustomPart() != null ? part.getCustomPart().getCustomPart() : "N/A") +
+               "\nCustomPart: " + (part.getCustomPart() != null ? part.getCustomPart().getCustomPartName() : "N/A") +
                "\nMaterial: " + (part.getPartMaterial() != null ? part.getPartMaterial().getMaterialName() : "N/A") +
                "\nWeight: " + (part.getTotalweightKg() != null ? part.getTotalweightKg() : "N/A") +
                "\nThickness: " + (part.getSheetThicknessMm() != null ? part.getSheetThicknessMm() : "N/A") +
@@ -102,7 +102,7 @@ public class QRCodeService {
 
         return "Part ID: " + (partDto.getId() != null ? partDto.getId().toString() : "N/A") +
                "\nProject ID: " + (partDto.getProject() != null ? partDto.getProject().getId().toString() : "N/A") +
-               "\nCustomPart: " + (partDto.getCustomPart() != null ? partDto.getCustomPart().getCustomPart() : "N/A") +
+               "\nCustomPart: " + (partDto.getCustomPart() != null ? partDto.getCustomPart().getCustomPartName() : "N/A") +
                "\nMaterial: " + (partDto.getPartMaterial() != null ? partDto.getPartMaterial().getMaterialName() : "N/A") +
                "\nWeight: " + (partDto.getTotalweightKg() != null ? partDto.getTotalweightKg() : "N/A") +
                "\nThickness: " + (partDto.getSheetThicknessMm() != null ? partDto.getSheetThicknessMm() : "N/A") +

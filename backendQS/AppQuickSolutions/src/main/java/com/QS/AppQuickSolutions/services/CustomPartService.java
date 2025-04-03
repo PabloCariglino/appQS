@@ -40,7 +40,7 @@ public class CustomPartService {
     // Crear una nueva pieza personalizada
     public CustomPart createCustomPart(String customPartName, MultipartFile image) throws IOException {
         CustomPart customPart = new CustomPart();
-        customPart.setCustomPart(customPartName);
+        customPart.setCustomPartName(customPartName);
 
         if (image != null && !image.isEmpty()) {
             String imageName = UUID.randomUUID().toString() + "_" + image.getOriginalFilename();
@@ -60,7 +60,7 @@ public class CustomPartService {
     
         // Actualiza el nombre solo si se proporciona
         if (customPartName != null && !customPartName.isEmpty()) {
-            existingPart.setCustomPart(customPartName);
+            existingPart.setCustomPartName(customPartName);
         }
     
         // Actualiza la imagen solo si se proporciona

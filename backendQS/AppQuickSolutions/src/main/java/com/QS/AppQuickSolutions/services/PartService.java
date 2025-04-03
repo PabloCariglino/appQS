@@ -105,4 +105,13 @@ public class PartService {
         part.setScanDateTime(LocalDateTime.now());
         return partRepository.save(part);
     }
+
+    @Transactional
+    public Part save(Part part) {
+        return partRepository.save(part);
+    }
+
+    // public Part findById(String id) {
+    //     return partRepository.findById(id).orElse(null);
+    // }
 }

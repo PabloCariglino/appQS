@@ -13,6 +13,9 @@ const ProjectList = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState(null);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const navigate = useNavigate();
   const { role } = useContext(AuthContext);
 
@@ -61,6 +64,7 @@ const ProjectList = () => {
     console.log(`Redirigiendo al proyecto con ID: ${id}`);
     navigate(`/projects/${id}`);
   };
+
   const handleCreateProject = () => navigate("/create-project");
   const handlePartCustomList = () => navigate("/PartCustom-list");
   const handleMaterialList = () => navigate("/material-list");
@@ -121,6 +125,57 @@ const ProjectList = () => {
     setSortConfig({ key, direction });
   };
 
+  const handleDeleteProject = async (projectId) => {
+    const token = getAccessToken();
+    if (!token) {
+      setError("No estás autenticado. Por favor, inicia sesión.");
+      return;
+    }
+
+    try {
+      const response = await ProjectService.deleteProject(projectId);
+
+      if (response.success) {
+        setProjects((prevProjects) =>
+          prevProjects.filter((project) => project.id !== projectId)
+        );
+        setFilteredProjects((prevFiltered) =>
+          prevFiltered.filter((project) => project.id !== projectId)
+        );
+
+        console.log(`Proyecto con ID ${projectId} eliminado con éxito.`);
+
+        setShowSuccessMessage(true);
+        setTimeout(() => {
+          setShowSuccessMessage(false);
+        }, 3000);
+      } else {
+        setError(response.message || "Error al eliminar el proyecto.");
+      }
+    } catch (err) {
+      console.error("Error al eliminar el proyecto:", err);
+      setError("Error al eliminar el proyecto. Por favor, intenta nuevamente.");
+    }
+  };
+
+  const openDeleteModal = (projectId) => {
+    setProjectToDelete(projectId);
+    setShowModal(true);
+  };
+
+  const confirmDelete = () => {
+    if (projectToDelete) {
+      handleDeleteProject(projectToDelete);
+    }
+    setShowModal(false);
+    setProjectToDelete(null);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setProjectToDelete(null);
+  };
+
   const formatDateOnly = (date) => new Date(date).toLocaleDateString();
   const formatDateTimeWithoutSeconds = (date) =>
     new Date(date).toLocaleString([], {
@@ -131,11 +186,17 @@ const ProjectList = () => {
       minute: "2-digit",
     });
 
+  const isAdmin = role === "ADMIN";
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
-        <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
+        <h2
+          className={`text-center text-3xl md:text-4xl font-bold mb-6 ${
+            isAdmin ? "text-grill" : "text-blue-800"
+          }`}
+        >
           Lista de Proyectos
         </h2>
         {error && (
@@ -143,32 +204,43 @@ const ProjectList = () => {
             {error}
           </div>
         )}
-        <div className="w-full max-w-[89vw] mx-auto border border-dashboard-border rounded-lg shadow-md p-6 bg-dashboard-background">
-          {/* Botones de acción */}
-          <div className="flex flex-col sm:flex-row justify-between mb-4 gap-3">
-            <div className="flex flex-col sm:flex-row gap-3">
+        {showSuccessMessage && (
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-green-500 text-white p-4 rounded-lg shadow-lg animate-fade-in-out">
+              Proyecto eliminado con éxito
+            </div>
+          </div>
+        )}
+        <div
+          className={`w-full max-w-[89vw] mx-auto border border-dashboard-border rounded-lg shadow-md p-6 ${
+            isAdmin ? "bg-dashboard-background" : "bg-gray-50"
+          }`}
+        >
+          {isAdmin && (
+            <div className="flex flex-col sm:flex-row justify-between mb-4 gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handlePartCustomList}
+                  className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
+                >
+                  Crear Pieza
+                </button>
+                <button
+                  onClick={handleMaterialList}
+                  className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
+                >
+                  Crear Material
+                </button>
+              </div>
               <button
-                onClick={handlePartCustomList}
+                onClick={handleCreateProject}
                 className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
               >
-                Crear Pieza
-              </button>
-              <button
-                onClick={handleMaterialList}
-                className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
-              >
-                Crear Material
+                Crear Proyecto
               </button>
             </div>
-            <button
-              onClick={handleCreateProject}
-              className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
-            >
-              Crear Proyecto
-            </button>
-          </div>
+          )}
 
-          {/* Campo de búsqueda */}
           <div className="mb-4 flex justify-end">
             <input
               type="text"
@@ -179,11 +251,16 @@ const ProjectList = () => {
             />
           </div>
 
-          {/* Tabla de proyectos */}
           <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
-                <tr className="bg-dashboard-text text-white">
+                <tr
+                  className={
+                    isAdmin
+                      ? "bg-dashboard-text text-white"
+                      : "bg-gray-600 text-white"
+                  }
+                >
                   <th
                     onClick={() => handleSort("createdDate")}
                     className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
@@ -196,18 +273,22 @@ const ProjectList = () => {
                   >
                     ID
                   </th>
-                  <th
-                    onClick={() => handleSort("clientAlias")}
-                    className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
-                  >
-                    Nombre del Cliente
-                  </th>
-                  <th
-                    onClick={() => handleSort("contact")}
-                    className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
-                  >
-                    Contacto
-                  </th>
+                  {isAdmin && (
+                    <th
+                      onClick={() => handleSort("clientAlias")}
+                      className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                    >
+                      Nombre del Cliente
+                    </th>
+                  )}
+                  {isAdmin && (
+                    <th
+                      onClick={() => handleSort("contact")}
+                      className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                    >
+                      Contacto
+                    </th>
+                  )}
                   <th
                     onClick={() => handleSort("visitDateTime")}
                     className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
@@ -218,7 +299,7 @@ const ProjectList = () => {
                     onClick={() => handleSort("installationDateTime")}
                     className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
                   >
-                    Fecha de Instalación
+                    Fecha de Instalación Estimada
                   </th>
                   <th
                     onClick={() => handleSort("pieces")}
@@ -232,41 +313,82 @@ const ProjectList = () => {
                   >
                     Estado
                   </th>
+                  {isAdmin && <th className="p-3 text-center">Acciones</th>}
                 </tr>
               </thead>
               <tbody>
                 {filteredProjects.map((project) => (
                   <tr
                     key={project.id}
-                    onClick={() => handleProjectClick(project.id)}
-                    className="border-b border-dashboard-border hover:bg-gray-100 cursor-pointer transition-colors"
+                    className="border-b border-dashboard-border hover:bg-gray-100 transition-colors"
                   >
-                    <td className="p-3 text-center text-dashboard-text">
+                    <td
+                      onClick={() => handleProjectClick(project.id)}
+                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                    >
                       {formatDateOnly(project.createdDate)}
                     </td>
-                    <td className="p-3 text-center text-dashboard-text">
+                    <td
+                      onClick={() => handleProjectClick(project.id)}
+                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                    >
                       {project.id}
                     </td>
-                    <td className="p-3 text-center text-dashboard-text">
-                      {project.clientAlias}
-                    </td>
-                    <td className="p-3 text-center text-dashboard-text">
-                      {project.contact}
-                    </td>
-                    <td className="p-3 text-center text-dashboard-text">
+                    {isAdmin && (
+                      <td
+                        onClick={() => handleProjectClick(project.id)}
+                        className="p-3 text-center text-dashboard-text cursor-pointer"
+                      >
+                        {project.clientAlias}
+                      </td>
+                    )}
+                    {isAdmin && (
+                      <td
+                        onClick={() => handleProjectClick(project.id)}
+                        className="p-3 text-center text-dashboard-text cursor-pointer"
+                      >
+                        {project.contact}
+                      </td>
+                    )}
+                    <td
+                      onClick={() => handleProjectClick(project.id)}
+                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                    >
                       {formatDateTimeWithoutSeconds(project.visitDateTime)}
                     </td>
-                    <td className="p-3 text-center text-dashboard-text">
+                    <td
+                      onClick={() => handleProjectClick(project.id)}
+                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                    >
                       {formatDateTimeWithoutSeconds(
                         project.installationDateTime
                       )}
                     </td>
-                    <td className="p-3 text-center text-dashboard-text">
+                    <td
+                      onClick={() => handleProjectClick(project.id)}
+                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                    >
                       {project.parts ? project.parts.length : 0}
                     </td>
-                    <td className="p-3 text-center text-dashboard-text">
+                    <td
+                      onClick={() => handleProjectClick(project.id)}
+                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                    >
                       {project.state ? "En proceso" : "Finalizado"}
                     </td>
+                    {isAdmin && (
+                      <td className="p-3 text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDeleteModal(project.id);
+                          }}
+                          className="bg-red-500 text-white text-sm px-3 py-1 rounded hover:bg-red-600 transition-colors duration-300"
+                        >
+                          Eliminar
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -274,11 +396,38 @@ const ProjectList = () => {
           </div>
         </div>
 
-        {/* Botón Volver centrado */}
-        <div className="mt-6 flex justify-center">
-          <BackButton />
-        </div>
+        {isAdmin && (
+          <div className="mt-6 flex justify-center">
+            <BackButton />
+          </div>
+        )}
       </div>
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">
+              Confirmar Eliminación
+            </h3>
+            <p>¿Estás seguro de que quieres eliminar este proyecto?</p>
+            <div className="mt-4 flex justify-end space-x-2">
+              <button
+                onClick={closeModal}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <FooterDashboard />
     </div>
   );

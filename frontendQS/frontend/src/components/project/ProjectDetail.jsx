@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
-import { FaPencilAlt, FaSortDown, FaSortUp, FaTimes } from "react-icons/fa";
+import axios from "axios";
+import { AnimatePresence, motion } from "framer-motion";
+import { useContext, useEffect, useRef, useState } from "react";
+import { FaPencilAlt, FaPrint, FaSortDown, FaSortUp } from "react-icons/fa";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useReactToPrint } from "react-to-print";
+import { AuthContext } from "../../auth/AuthContext";
 import { getAccessToken } from "../../auth/AuthService";
 import PartService from "../../services/PartService";
 import ProjectService from "../../services/ProjectService";
@@ -8,6 +12,7 @@ import QrCodeService from "../../services/QrCodeService";
 import BackButton from "../BackButton";
 import FooterDashboard from "./../FooterDashboard";
 import NavbarDashboard from "./../NavbarDashboard";
+import QRPrintTemplate from "./QRPrintTemplate";
 
 // Hook personalizado para manejar la confirmación al salir
 const useBeforeUnload = (hasUnsavedChanges) => {
@@ -25,21 +30,82 @@ const useBeforeUnload = (hasUnsavedChanges) => {
   }, [hasUnsavedChanges]);
 };
 
+// Enum para los estados de la pieza (mapeado desde el backend)
+const PartStateOptions = [
+  "DESARROLLANDO",
+  "EN_PLEGADOR",
+  "EN_FABRICA",
+  "DEVOLUCION_FUERA_DE_MEDIDA",
+  "FALTANTE",
+  "CONFECCIONADO",
+  "PINTADO",
+  "REPINTANDO_POR_GOLPE_O_RAYON",
+  "EMBALADO",
+  "EN_DEPOSITO",
+  "DESPACHADO",
+  "REPARACION_PENDIENTE",
+];
+
 const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { role } = useContext(AuthContext); // Obtener el rol del usuario
   const [project, setProject] = useState(null);
   const [originalProject, setOriginalProject] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [qrImageUrls, setQrImageUrls] = useState({});
+  const [partImageUrls, setPartImageUrls] = useState({});
   const [isLoadingQr, setIsLoadingQr] = useState({});
   const [editingField, setEditingField] = useState(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [showDeleteModal, setShowDeleteModal] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedPartsToPrint, setSelectedPartsToPrint] = useState([]);
+  const [isQrLoaded, setIsQrLoaded] = useState(false);
+  const printRef = useRef();
+
+  const isAdmin = role === "ADMIN"; // Determinar si el usuario es ADMIN
+
+  // Manejar la impresión con react-to-print
+  const handlePrint = useReactToPrint({
+    content: () => {
+      console.log("Accediendo a printRef.current:", printRef.current);
+      if (!printRef.current) {
+        console.error("printRef.current es null");
+        throw new Error("No se encontró el contenido para imprimir.");
+      }
+      return printRef.current;
+    },
+    documentTitle: `QR_Piezas_Proyecto_${project?.id || "unknown"}`,
+    onBeforeGetContent: () => {
+      console.log("Preparando contenido para impresión...");
+      console.log("Piezas seleccionadas:", selectedPartsToPrint);
+      console.log("Estado de project:", project);
+      if (!selectedPartsToPrint || selectedPartsToPrint.length === 0) {
+        console.error("No hay piezas seleccionadas para imprimir.");
+        throw new Error("No hay piezas seleccionadas para imprimir.");
+      }
+      if (!project || !project.parts) {
+        console.error("Project o project.parts no están definidos.");
+        throw new Error("No hay datos de proyecto disponibles para imprimir.");
+      }
+      return Promise.resolve();
+    },
+    onAfterPrint: () => {
+      console.log("Impresión completada.");
+      setSelectedPartsToPrint([]); // Limpiar selección después de imprimir
+      setShowPrintModal(false); // Cerrar el modal después de imprimir
+    },
+    onPrintError: (errorLocation, error) => {
+      console.error("Error al intentar imprimir:", errorLocation, error);
+      setError("Error al intentar imprimir. Por favor, intenta nuevamente.");
+    },
+  });
 
   // Cargar el proyecto
   useEffect(() => {
@@ -79,15 +145,23 @@ const ProjectDetail = () => {
   // Cargar las imágenes QR
   useEffect(() => {
     const loadQrImages = async () => {
-      if (!project || !project.parts) return;
+      if (!project || !project.parts || project.parts.length === 0) {
+        console.log("Proyecto o partes no disponibles para cargar QRs.");
+        setIsQrLoaded(true);
+        return;
+      }
 
       const newLoadingState = {};
       const newUrls = {};
       let shouldRedirect = false;
 
+      console.log("Partes del proyecto:", project.parts);
+
       for (const part of project.parts) {
         if (part.qrCodeFilePath) {
           newLoadingState[part.qrCodeFilePath] = true;
+        } else {
+          console.warn(`La pieza con ID ${part.id} no tiene qrCodeFilePath.`);
         }
       }
       setIsLoadingQr(newLoadingState);
@@ -96,9 +170,7 @@ const ProjectDetail = () => {
         if (part.qrCodeFilePath && !shouldRedirect) {
           try {
             const cleanFilename =
-              part.qrCodeFilePath.split("\\").pop() ||
-              part.qrCodeFilePath.split("/").pop() ||
-              part.qrCodeFilePath;
+              part.qrCodeFilePath.split(/[\\/]/).pop() || part.qrCodeFilePath;
             console.log(`Intentando cargar QR para ${cleanFilename}`);
             const response = await QrCodeService.getQRCodeImage(cleanFilename);
             if (response.success) {
@@ -120,6 +192,7 @@ const ProjectDetail = () => {
           } catch (err) {
             console.error(
               `Error al cargar QR para ${part.qrCodeFilePath}:`,
+              err.response?.status,
               err.message
             );
             newUrls[part.qrCodeFilePath] = "/placeholder-qr.png";
@@ -131,6 +204,8 @@ const ProjectDetail = () => {
       if (!shouldRedirect) {
         setQrImageUrls(newUrls);
         setIsLoadingQr((prev) => ({ ...prev, ...newLoadingState }));
+        setIsQrLoaded(true);
+        console.log("Estado de qrImageUrls actualizado:", newUrls);
       }
 
       if (shouldRedirect) {
@@ -143,6 +218,7 @@ const ProjectDetail = () => {
     }
 
     return () => {
+      console.log("Limpiando URLs de QRs...");
       Object.values(qrImageUrls).forEach((url) => {
         if (url && url.startsWith("blob:")) {
           URL.revokeObjectURL(url);
@@ -152,8 +228,70 @@ const ProjectDetail = () => {
     };
   }, [project, navigate]);
 
+  // Cargar las imágenes de las piezas
+  useEffect(() => {
+    const loadPartImages = async () => {
+      if (!project || !project.parts || project.parts.length === 0) return;
+
+      const token = getAccessToken();
+      if (!token) {
+        setError("No estás autenticado. No se pueden cargar las imágenes.");
+        return;
+      }
+
+      const imagePromises = project.parts.map(async (part) => {
+        if (part.customPart?.imageFilePath) {
+          try {
+            const response = await axios.get(
+              `http://localhost:8080/image-custom-part/${part.customPart.imageFilePath}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                responseType: "blob",
+              }
+            );
+            const imageUrl = URL.createObjectURL(response.data);
+            return { id: part.id, url: imageUrl };
+          } catch (err) {
+            console.error(
+              `Error al cargar la imagen para la pieza ${part.id}:`,
+              err.response?.status,
+              err.message
+            );
+            return { id: part.id, url: null }; // Retornar null en caso de error
+          }
+        }
+        return { id: part.id, url: null };
+      });
+
+      const images = await Promise.all(imagePromises);
+      const imageUrlMap = images.reduce((acc, { id, url }) => {
+        if (id && url) {
+          acc[id] = url;
+        }
+        return acc;
+      }, {});
+      setPartImageUrls(imageUrlMap);
+    };
+
+    if (project && project.parts) {
+      loadPartImages();
+    }
+
+    return () => {
+      Object.values(partImageUrls).forEach((url) => {
+        if (url && url.startsWith("blob:")) {
+          URL.revokeObjectURL(url);
+        }
+      });
+      setPartImageUrls({});
+    };
+  }, [project]);
+
   // Detectar cambios no guardados
   useEffect(() => {
+    if (!project || !originalProject) return;
     const hasChanges =
       JSON.stringify(project) !== JSON.stringify(originalProject);
     setHasUnsavedChanges(hasChanges);
@@ -246,6 +384,8 @@ const ProjectDetail = () => {
         });
 
       const updatedParts = [];
+      const failedParts = [];
+
       for (const part of project.parts) {
         const originalPart = originalProject.parts.find(
           (p) => p.id === part.id
@@ -260,6 +400,8 @@ const ProjectDetail = () => {
             observations: originalPart.observations,
             receptionState: originalPart.receptionState,
             qualityControlState: originalPart.qualityControlState,
+            partState: originalPart.partState,
+            scanDateTime: originalPart.scanDateTime,
           }) !==
           JSON.stringify({
             totalweightKg: part.totalweightKg,
@@ -270,73 +412,120 @@ const ProjectDetail = () => {
             observations: part.observations,
             receptionState: part.receptionState,
             qualityControlState: part.qualityControlState,
+            partState: part.partState,
+            scanDateTime: part.scanDateTime,
           });
 
         if (partChanged) {
           // Actualizar la pieza en el backend
-          const partResponse = await PartService.updatePart(part.id, {
-            customPart: part.customPart,
-            partMaterial: part.partMaterial,
-            totalweightKg: part.totalweightKg,
-            sheetThicknessMm: part.sheetThicknessMm,
-            lengthPiecesMm: part.lengthPiecesMm,
-            heightMm: part.heightMm,
-            widthMm: part.widthMm,
-            observations: part.observations,
-            receptionState: part.receptionState,
-            qualityControlState: part.qualityControlState,
-          });
+          try {
+            const partResponse = await PartService.updatePart(part.id, {
+              customPart: part.customPart,
+              partMaterial: part.partMaterial,
+              totalweightKg: part.totalweightKg,
+              sheetThicknessMm: part.sheetThicknessMm,
+              lengthPiecesMm: part.lengthPiecesMm,
+              heightMm: part.heightMm,
+              widthMm: part.widthMm,
+              observations: part.observations,
+              receptionState: part.receptionState,
+              qualityControlState: part.qualityControlState,
+              partState: part.partState,
+              scanDateTime: part.scanDateTime,
+            });
 
-          if (!partResponse.success) {
-            throw new Error(
-              `Error al actualizar la pieza ${part.id}: ${partResponse.message}`
-            );
+            if (!partResponse.success) {
+              throw new Error(
+                `Error al actualizar la pieza ${part.id}: ${partResponse.message}`
+              );
+            }
+          } catch (err) {
+            console.error(`Error al actualizar la pieza ${part.id}:`, err);
+            failedParts.push({ id: part.id, error: err.message });
+            updatedParts.push(part);
+            continue;
           }
         }
 
         if (projectChanged || partChanged) {
-          // Eliminar el QR existente si existe
-          if (part.qrCodeFilePath) {
-            const qrCodeId = part.qrCodeFilePath.split("_part_qr.png")[0];
-            const qrDeleteResponse = await QrCodeService.deleteQRCode(qrCodeId);
-            if (!qrDeleteResponse.success) {
-              throw new Error(
-                `Error al eliminar el QR de la pieza ${part.id}: ${qrDeleteResponse.message}`
-              );
+          // Solo eliminar y regenerar el QR si el usuario es ADMIN
+          if (isAdmin) {
+            // Eliminar el QR existente si existe
+            if (part.qrCodeFilePath) {
+              try {
+                const qrCodeId = part.qrCodeFilePath.split("_part_qr.png")[0];
+                const qrDeleteResponse = await QrCodeService.deleteQRCode(
+                  qrCodeId
+                );
+                if (!qrDeleteResponse.success) {
+                  throw new Error(
+                    `Error al eliminar el QR de la pieza ${part.id}: ${qrDeleteResponse.message}`
+                  );
+                }
+              } catch (err) {
+                console.error(
+                  `Error al eliminar el QR de la pieza ${part.id}:`,
+                  err
+                );
+                failedParts.push({
+                  id: part.id,
+                  error: `Error al eliminar QR: ${err.message}`,
+                });
+                updatedParts.push(part);
+                continue;
+              }
             }
-          }
 
-          // Generar un nuevo QR
-          const qrData = {
-            id: part.id, // Añadimos el ID de la pieza
-            project: { id: project.id }, // Añadimos el proyecto
-            customPart: part.customPart, // Añadimos customPart
-            partMaterial: part.partMaterial, // Añadimos partMaterial
-            clientAlias: project.clientAlias,
-            contact: project.contact,
-            state: project.state,
-            visitDateTime: project.visitDateTime,
-            installationDateTime: project.installationDateTime,
-            totalweightKg: part.totalweightKg,
-            sheetThicknessMm: part.sheetThicknessMm,
-            lengthPiecesMm: part.lengthPiecesMm,
-            heightMm: part.heightMm,
-            widthMm: part.widthMm,
-            observations: part.observations,
-            receptionState: part.receptionState,
-            qualityControlState: part.qualityControlState,
-          };
+            // Generar un nuevo QR
+            try {
+              const qrData = {
+                id: part.id,
+                project: { id: project.id },
+                customPart: part.customPart,
+                partMaterial: part.partMaterial,
+                clientAlias: project.clientAlias,
+                contact: project.contact,
+                state: project.state,
+                visitDateTime: project.visitDateTime,
+                installationDateTime: project.installationDateTime,
+                totalweightKg: part.totalweightKg,
+                sheetThicknessMm: part.sheetThicknessMm,
+                lengthPiecesMm: part.lengthPiecesMm,
+                heightMm: part.heightMm,
+                widthMm: part.widthMm,
+                observations: part.observations,
+                receptionState: part.receptionState,
+                qualityControlState: part.qualityControlState,
+                partState: part.partState,
+                scanDateTime: part.scanDateTime,
+              };
 
-          const qrResponse = await QrCodeService.generateQRCode(qrData);
-          if (qrResponse.success) {
-            updatedParts.push({
-              ...part,
-              qrCodeFilePath: qrResponse.data.filePath, // Ajustamos a filePath según la respuesta del backend
-            });
+              const qrResponse = await QrCodeService.generateQRCode(qrData);
+              if (qrResponse.success) {
+                updatedParts.push({
+                  ...part,
+                  qrCodeFilePath: qrResponse.data.filePath,
+                });
+              } else {
+                throw new Error(
+                  `Error al regenerar el QR de la pieza ${part.id}: ${qrResponse.message}`
+                );
+              }
+            } catch (err) {
+              console.error(
+                `Error al regenerar el QR de la pieza ${part.id}:`,
+                err
+              );
+              failedParts.push({
+                id: part.id,
+                error: `Error al generar QR: ${err.message}`,
+              });
+              updatedParts.push(part);
+              continue;
+            }
           } else {
-            throw new Error(
-              `Error al regenerar el QR de la pieza ${part.id}: ${qrResponse.message}`
-            );
+            // Si el usuario es OPERATOR, simplemente mantener la pieza sin modificar el QR
+            updatedParts.push(part);
           }
         } else {
           updatedParts.push(part);
@@ -352,9 +541,24 @@ const ProjectDetail = () => {
         JSON.parse(JSON.stringify({ ...project, parts: updatedParts }))
       );
       setHasUnsavedChanges(false);
-      alert("Cambios guardados exitosamente");
+
+      if (failedParts.length > 0) {
+        const errorMessages = failedParts.map(
+          (failed) => `Pieza ${failed.id}: ${failed.error}`
+        );
+        setError(
+          `Algunos cambios no se pudieron guardar:\n${errorMessages.join("\n")}`
+        );
+      } else {
+        setShowSuccessModal(true);
+        setTimeout(() => setShowSuccessModal(false), 3000);
+      }
     } catch (err) {
-      setError(`Error al guardar los cambios: ${err.message}`);
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "Error desconocido al guardar los cambios";
+      setError(`Error al guardar los cambios: ${errorMessage}`);
       console.error("Error saving changes:", err);
     }
   };
@@ -365,7 +569,12 @@ const ProjectDetail = () => {
       const part = project.parts.find((p) => p.id === partId);
       if (part.qrCodeFilePath) {
         const qrCodeId = part.qrCodeFilePath.split("_part_qr.png")[0];
-        await QrCodeService.deleteQRCode(qrCodeId);
+        const qrDeleteResponse = await QrCodeService.deleteQRCode(qrCodeId);
+        if (!qrDeleteResponse.success) {
+          throw new Error(
+            `Error al eliminar el QR de la pieza ${partId}: ${qrDeleteResponse.message}`
+          );
+        }
       }
 
       const response = await PartService.deletePart(partId);
@@ -389,11 +598,12 @@ const ProjectDetail = () => {
   };
 
   // Funciones de búsqueda y ordenamiento
-  const filteredParts = project?.parts?.filter((part) =>
-    part.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredParts =
+    project?.parts?.filter((part) =>
+      part.id.toString().toLowerCase().includes(searchTerm.toLowerCase())
+    ) || [];
 
-  const sortedParts = [...(filteredParts || [])].sort((a, b) => {
+  const sortedParts = [...filteredParts].sort((a, b) => {
     if (!sortConfig.key) return 0;
     const aValue = a[sortConfig.key];
     const bValue = b[sortConfig.key];
@@ -419,6 +629,69 @@ const ProjectDetail = () => {
       minute: "2-digit",
     });
 
+  // Manejar la selección de piezas para imprimir
+  const handleSelectPartToPrint = (partId) => {
+    setSelectedPartsToPrint((prev) =>
+      prev.includes(partId)
+        ? prev.filter((id) => id !== partId)
+        : [...prev, partId]
+    );
+  };
+
+  const handleSelectAllPartsToPrint = () => {
+    if (!project?.parts) return;
+    if (selectedPartsToPrint.length === project.parts.length) {
+      setSelectedPartsToPrint([]);
+    } else {
+      setSelectedPartsToPrint(project.parts.map((part) => part.id));
+    }
+  };
+
+  const handlePrintSelected = () => {
+    console.log("Iniciando handlePrintSelected...");
+    console.log("Piezas seleccionadas:", selectedPartsToPrint);
+    console.log("Estado de project:", project);
+    console.log("Estado de isQrLoaded:", isQrLoaded);
+
+    // Validar que haya piezas seleccionadas
+    if (!selectedPartsToPrint || selectedPartsToPrint.length === 0) {
+      alert("Por favor, selecciona al menos una pieza para imprimir.");
+      return;
+    }
+
+    // Validar que las imágenes QR estén cargadas
+    if (!isQrLoaded) {
+      alert(
+        "Las imágenes QR aún se están cargando. Por favor, espera un momento."
+      );
+      return;
+    }
+
+    // Validar que project y project.parts estén definidos
+    if (!project || !project.parts || project.parts.length === 0) {
+      alert("No hay datos de proyecto o piezas disponibles para imprimir.");
+      return;
+    }
+
+    // Validar que el contenido a imprimir exista
+    const partsToPrint = project.parts.filter((part) =>
+      selectedPartsToPrint.includes(part.id)
+    );
+    if (!partsToPrint || partsToPrint.length === 0) {
+      alert("No se encontraron piezas seleccionadas para imprimir.");
+      return;
+    }
+
+    // Proceder con la impresión
+    try {
+      console.log("Llamando a handlePrint...");
+      handlePrint();
+    } catch (err) {
+      console.error("Error al intentar imprimir:", err);
+      setError("Error al intentar imprimir. Por favor, intenta nuevamente.");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
@@ -436,7 +709,7 @@ const ProjectDetail = () => {
       <div className="min-h-screen flex flex-col bg-white">
         <NavbarDashboard />
         <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
-          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6 text-center">
+          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6 text-center whitespace-pre-line">
             {error}
           </div>
           <div className="mt-6 flex justify-center">
@@ -469,10 +742,18 @@ const ProjectDetail = () => {
     <div className="min-h-screen flex flex-col bg-white">
       <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
-        <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-8">
+        <h2
+          className={`text-center text-3xl md:text-4xl font-bold mb-8 ${
+            isAdmin ? "text-grill" : "text-blue-800"
+          }`}
+        >
           Detalles del Proyecto
         </h2>
-        <div className="w-full max-w-[95%] mx-auto bg-dashboard-background p-6 rounded-lg shadow-md">
+        <div
+          className={`w-full max-w-[95%] mx-auto p-6 rounded-lg shadow-md ${
+            isAdmin ? "bg-dashboard-background" : "bg-gray-50"
+          }`}
+        >
           {/* Detalles del proyecto */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-dashboard-text mb-4 text-center">
@@ -482,57 +763,67 @@ const ProjectDetail = () => {
                 </span>
               </div>
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-dashboard-text flex items-center justify-center space-x-2">
-                <span>
-                  <strong>Nombre del Cliente:</strong>{" "}
-                  {editingField?.field === "clientAlias" ? (
-                    <input
-                      type="text"
-                      value={project.clientAlias}
-                      onChange={(e) =>
-                        handleProjectChange("clientAlias", e.target.value)
-                      }
-                      onBlur={stopEditing}
-                      autoFocus
-                      className="border rounded px-2 py-1 w-40"
-                    />
-                  ) : (
-                    project.clientAlias
-                  )}
-                </span>
-                <button
-                  onClick={() => startEditing("clientAlias")}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <FaPencilAlt size={14} />
-                </button>
-              </div>
-              <div className="text-dashboard-text flex items-center justify-center space-x-2">
-                <span>
-                  <strong>Contacto:</strong>{" "}
-                  {editingField?.field === "contact" ? (
-                    <input
-                      type="text"
-                      value={project.contact}
-                      onChange={(e) =>
-                        handleProjectChange("contact", e.target.value)
-                      }
-                      onBlur={stopEditing}
-                      autoFocus
-                      className="border rounded px-2 py-1 w-40"
-                    />
-                  ) : (
-                    project.contact
-                  )}
-                </span>
-                <button
-                  onClick={() => startEditing("contact")}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <FaPencilAlt size={14} />
-                </button>
-              </div>
+            <div
+              className={`grid gap-6 ${
+                isAdmin
+                  ? "grid-cols-1 md:grid-cols-3"
+                  : "grid-cols-1 md:grid-cols-2"
+              }`}
+            >
+              {isAdmin && (
+                <div className="text-dashboard-text flex items-center justify-center space-x-2">
+                  <span>
+                    <strong>Nombre del Cliente:</strong>{" "}
+                    {editingField?.field === "clientAlias" ? (
+                      <input
+                        type="text"
+                        value={project.clientAlias}
+                        onChange={(e) =>
+                          handleProjectChange("clientAlias", e.target.value)
+                        }
+                        onBlur={stopEditing}
+                        autoFocus
+                        className="border rounded px-2 py-1 w-40"
+                      />
+                    ) : (
+                      project.clientAlias
+                    )}
+                  </span>
+                  <button
+                    onClick={() => startEditing("clientAlias")}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <FaPencilAlt size={14} />
+                  </button>
+                </div>
+              )}
+              {isAdmin && (
+                <div className="text-dashboard-text flex items-center justify-center space-x-2">
+                  <span>
+                    <strong>Contacto:</strong>{" "}
+                    {editingField?.field === "contact" ? (
+                      <input
+                        type="text"
+                        value={project.contact}
+                        onChange={(e) =>
+                          handleProjectChange("contact", e.target.value)
+                        }
+                        onBlur={stopEditing}
+                        autoFocus
+                        className="border rounded px-2 py-1 w-40"
+                      />
+                    ) : (
+                      project.contact
+                    )}
+                  </span>
+                  <button
+                    onClick={() => startEditing("contact")}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <FaPencilAlt size={14} />
+                  </button>
+                </div>
+              )}
               <div className="text-dashboard-text flex items-center justify-center space-x-2">
                 <span>
                   <strong>Estado:</strong>{" "}
@@ -555,12 +846,14 @@ const ProjectDetail = () => {
                     "Finalizado"
                   )}
                 </span>
-                <button
-                  onClick={() => startEditing("state")}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <FaPencilAlt size={14} />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => startEditing("state")}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <FaPencilAlt size={14} />
+                  </button>
+                )}
               </div>
               <div className="text-dashboard-text flex items-center justify-center">
                 <span>
@@ -592,12 +885,14 @@ const ProjectDetail = () => {
                     "N/A"
                   )}
                 </span>
-                <button
-                  onClick={() => startEditing("visitDateTime")}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <FaPencilAlt size={14} />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => startEditing("visitDateTime")}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <FaPencilAlt size={14} />
+                  </button>
+                )}
               </div>
               <div className="text-dashboard-text flex items-center justify-center space-x-2">
                 <span>
@@ -626,12 +921,14 @@ const ProjectDetail = () => {
                     "N/A"
                   )}
                 </span>
-                <button
-                  onClick={() => startEditing("installationDateTime")}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <FaPencilAlt size={14} />
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => startEditing("installationDateTime")}
+                    className="text-blue-500 hover:text-blue-700"
+                  >
+                    <FaPencilAlt size={14} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -647,6 +944,25 @@ const ProjectDetail = () => {
               </button>
             )}
           </div>
+
+          {/* Modal de éxito animado */}
+          <AnimatePresence>
+            {showSuccessModal && (
+              <div className="fixed inset-0 flex items-center justify-center z-50">
+                <motion.div
+                  className="bg-green-500 text-white p-6 rounded-lg shadow-lg"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <h3 className="text-lg font-semibold">
+                    Cambios guardados exitosamente
+                  </h3>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
           {/* Tabla de piezas */}
           <h3 className="text-lg font-semibold text-dashboard-text mb-4 text-center">
@@ -666,9 +982,15 @@ const ProjectDetail = () => {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-dashboard-text text-white">
+                  <tr
+                    className={
+                      isAdmin
+                        ? "bg-dashboard-text text-white"
+                        : "bg-gray-600 text-white"
+                    }
+                  >
                     <th
-                      className="p-3 text-center cursor-pointer"
+                      className="p-3 text-center cursor-pointer w-20"
                       onClick={() => requestSort("id")}
                     >
                       <div className="flex items-center justify-center space-x-1">
@@ -682,6 +1004,7 @@ const ProjectDetail = () => {
                       </div>
                     </th>
                     <th className="p-3 text-center">Pieza</th>
+                    <th className="p-3 text-center">Imagen Pieza</th>
                     <th className="p-3 text-center">Material</th>
                     <th
                       className="p-3 text-center cursor-pointer"
@@ -753,11 +1076,27 @@ const ProjectDetail = () => {
                           ))}
                       </div>
                     </th>
-                    <th className="p-3 text-center">Observaciones</th>
                     <th className="p-3 text-center">Recepción</th>
+                    <th className="p-3 text-center">
+                      Fecha y Hora de Recepción
+                    </th>
+                    <th className="p-3 text-center">Estado de Pieza</th>
                     <th className="p-3 text-center">Control de Calidad</th>
-                    <th className="p-3 text-center">QR</th>
-                    <th className="p-3 text-center">Acciones</th>
+                    {isAdmin && (
+                      <th className="p-3 text-center">
+                        <div className="flex flex-col items-center">
+                          <span>QR</span>
+                          <button
+                            onClick={() => setShowPrintModal(true)}
+                            className="mt-2 text-white hover:text-gray-200"
+                          >
+                            <FaPrint size={14} />
+                          </button>
+                        </div>
+                      </th>
+                    )}
+                    <th className="p-3 text-center">Observaciones</th>
+                    {isAdmin && <th className="p-3 text-center">Acciones</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -766,18 +1105,33 @@ const ProjectDetail = () => {
                       key={part.id}
                       className="border-b border-dashboard-border hover:bg-gray-100 transition-colors"
                     >
-                      <td className="p-3 text-center text-dashboard-text">
+                      <td className="p-3 text-center text-dashboard-text w-20">
                         {part.id}
                       </td>
                       <td className="p-3 text-center text-dashboard-text">
-                        {part.customPart?.customPart || "Sin nombre"}
+                        {part.customPart?.customPartName || "Sin nombre"}
+                      </td>
+                      <td className="p-3 text-center">
+                        {part.customPart?.imageFilePath &&
+                        partImageUrls[part.id] ? (
+                          <img
+                            src={partImageUrls[part.id]}
+                            alt={part.customPart.customPartName || "Pieza"}
+                            className="w-16 h-auto mx-auto"
+                          />
+                        ) : (
+                          <span className="text-dashboard-text">
+                            Sin imagen
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 text-center text-dashboard-text">
                         {part.partMaterial?.materialName || "Sin material"}
                       </td>
                       <td className="p-3 text-center text-dashboard-text">
                         <div className="flex items-center justify-center space-x-2">
-                          {editingField?.field === "totalweightKg" &&
+                          {isAdmin &&
+                          editingField?.field === "totalweightKg" &&
                           editingField?.partId === part.id ? (
                             <input
                               type="number"
@@ -796,21 +1150,24 @@ const ProjectDetail = () => {
                           ) : (
                             <>
                               <span>{part.totalweightKg || "N/A"}</span>
-                              <button
-                                onClick={() =>
-                                  startEditing("totalweightKg", part.id)
-                                }
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                <FaPencilAlt size={14} />
-                              </button>
+                              {isAdmin && (
+                                <button
+                                  onClick={() =>
+                                    startEditing("totalweightKg", part.id)
+                                  }
+                                  className="text-blue-500 hover:text-blue-700"
+                                >
+                                  <FaPencilAlt size={14} />
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
                       </td>
                       <td className="p-3 text-center text-dashboard-text">
                         <div className="flex items-center justify-center space-x-2">
-                          {editingField?.field === "sheetThicknessMm" &&
+                          {isAdmin &&
+                          editingField?.field === "sheetThicknessMm" &&
                           editingField?.partId === part.id ? (
                             <input
                               type="number"
@@ -829,21 +1186,24 @@ const ProjectDetail = () => {
                           ) : (
                             <>
                               <span>{part.sheetThicknessMm || "N/A"}</span>
-                              <button
-                                onClick={() =>
-                                  startEditing("sheetThicknessMm", part.id)
-                                }
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                <FaPencilAlt size={14} />
-                              </button>
+                              {isAdmin && (
+                                <button
+                                  onClick={() =>
+                                    startEditing("sheetThicknessMm", part.id)
+                                  }
+                                  className="text-blue-500 hover:text-blue-700"
+                                >
+                                  <FaPencilAlt size={14} />
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
                       </td>
                       <td className="p-3 text-center text-dashboard-text">
                         <div className="flex items-center justify-center space-x-2">
-                          {editingField?.field === "lengthPiecesMm" &&
+                          {isAdmin &&
+                          editingField?.field === "lengthPiecesMm" &&
                           editingField?.partId === part.id ? (
                             <input
                               type="number"
@@ -862,21 +1222,24 @@ const ProjectDetail = () => {
                           ) : (
                             <>
                               <span>{part.lengthPiecesMm || "N/A"}</span>
-                              <button
-                                onClick={() =>
-                                  startEditing("lengthPiecesMm", part.id)
-                                }
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                <FaPencilAlt size={14} />
-                              </button>
+                              {isAdmin && (
+                                <button
+                                  onClick={() =>
+                                    startEditing("lengthPiecesMm", part.id)
+                                  }
+                                  className="text-blue-500 hover:text-blue-700"
+                                >
+                                  <FaPencilAlt size={14} />
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
                       </td>
                       <td className="p-3 text-center text-dashboard-text">
                         <div className="flex items-center justify-center space-x-2">
-                          {editingField?.field === "heightMm" &&
+                          {isAdmin &&
+                          editingField?.field === "heightMm" &&
                           editingField?.partId === part.id ? (
                             <input
                               type="number"
@@ -895,21 +1258,24 @@ const ProjectDetail = () => {
                           ) : (
                             <>
                               <span>{part.heightMm || "N/A"}</span>
-                              <button
-                                onClick={() =>
-                                  startEditing("heightMm", part.id)
-                                }
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                <FaPencilAlt size={14} />
-                              </button>
+                              {isAdmin && (
+                                <button
+                                  onClick={() =>
+                                    startEditing("heightMm", part.id)
+                                  }
+                                  className="text-blue-500 hover:text-blue-700"
+                                >
+                                  <FaPencilAlt size={14} />
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
                       </td>
                       <td className="p-3 text-center text-dashboard-text">
                         <div className="flex items-center justify-center space-x-2">
-                          {editingField?.field === "widthMm" &&
+                          {isAdmin &&
+                          editingField?.field === "widthMm" &&
                           editingField?.partId === part.id ? (
                             <input
                               type="number"
@@ -928,45 +1294,16 @@ const ProjectDetail = () => {
                           ) : (
                             <>
                               <span>{part.widthMm || "N/A"}</span>
-                              <button
-                                onClick={() => startEditing("widthMm", part.id)}
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                <FaPencilAlt size={14} />
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-3 text-center text-dashboard-text">
-                        <div className="flex items-center justify-center space-x-2">
-                          {editingField?.field === "observations" &&
-                          editingField?.partId === part.id ? (
-                            <input
-                              type="text"
-                              value={part.observations || ""}
-                              onChange={(e) =>
-                                handlePartChange(
-                                  part.id,
-                                  "observations",
-                                  e.target.value
-                                )
-                              }
-                              onBlur={stopEditing}
-                              autoFocus
-                              className="border rounded px-2 py-1 w-32 text-center"
-                            />
-                          ) : (
-                            <>
-                              <span>{part.observations || "N/A"}</span>
-                              <button
-                                onClick={() =>
-                                  startEditing("observations", part.id)
-                                }
-                                className="text-blue-500 hover:text-blue-700"
-                              >
-                                <FaPencilAlt size={14} />
-                              </button>
+                              {isAdmin && (
+                                <button
+                                  onClick={() =>
+                                    startEditing("widthMm", part.id)
+                                  }
+                                  className="text-blue-500 hover:text-blue-700"
+                                >
+                                  <FaPencilAlt size={14} />
+                                </button>
+                              )}
                             </>
                           )}
                         </div>
@@ -1002,6 +1339,54 @@ const ProjectDetail = () => {
                               <button
                                 onClick={() =>
                                   startEditing("receptionState", part.id)
+                                }
+                                className="text-blue-500 hover:text-blue-700"
+                              >
+                                <FaPencilAlt size={14} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3 text-center text-dashboard-text">
+                        {part.scanDateTime
+                          ? formatDateTimeWithoutSeconds(part.scanDateTime)
+                          : "N/A"}
+                      </td>
+                      <td className="p-3 text-center text-dashboard-text">
+                        <div className="flex items-center justify-center space-x-2">
+                          {editingField?.field === "partState" &&
+                          editingField?.partId === part.id ? (
+                            <select
+                              value={part.partState || ""}
+                              onChange={(e) =>
+                                handlePartChange(
+                                  part.id,
+                                  "partState",
+                                  e.target.value
+                                )
+                              }
+                              onBlur={stopEditing}
+                              autoFocus
+                              className="border rounded px-2 py-1 w-40 text-center"
+                            >
+                              <option value="">Seleccionar estado</option>
+                              {PartStateOptions.map((state) => (
+                                <option key={state} value={state}>
+                                  {state.replace(/_/g, " ")}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <>
+                              <span>
+                                {part.partState
+                                  ? part.partState.replace(/_/g, " ")
+                                  : "N/A"}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  startEditing("partState", part.id)
                                 }
                                 className="text-blue-500 hover:text-blue-700"
                               >
@@ -1051,51 +1436,87 @@ const ProjectDetail = () => {
                           )}
                         </div>
                       </td>
-                      <td className="p-3 text-center">
-                        {part.qrCodeFilePath ? (
-                          <>
-                            {isLoadingQr[part.qrCodeFilePath] ? (
-                              <div className="w-12 h-12 flex items-center justify-center text-gray-600 text-xs bg-gray-100 border border-gray-300 rounded mx-auto">
-                                Cargando QR...
-                              </div>
-                            ) : (
-                              <img
-                                src={
-                                  qrImageUrls[part.qrCodeFilePath] ||
-                                  "/placeholder-qr.png"
-                                }
-                                alt="QR Code"
-                                className="w-12 h-12 object-contain border border-gray-300 rounded mx-auto"
-                                onError={(e) => {
-                                  if (e.target.src !== "/placeholder-qr.png") {
+                      {isAdmin && (
+                        <td className="p-3 text-center">
+                          {part.qrCodeFilePath ? (
+                            <>
+                              {isLoadingQr[part.qrCodeFilePath] ? (
+                                <div className="w-12 h-12 flex items-center justify-center text-gray-600 text-xs bg-gray-100 border border-gray-300 rounded mx-auto">
+                                  Cargando QR...
+                                </div>
+                              ) : qrImageUrls[part.qrCodeFilePath] ? (
+                                <img
+                                  src={qrImageUrls[part.qrCodeFilePath]}
+                                  alt="QR Code"
+                                  className="w-12 h-12 object-contain border border-gray-300 rounded mx-auto"
+                                  onError={(e) => {
                                     console.warn(
                                       `No se pudo cargar la imagen QR para ${part.qrCodeFilePath}. Usando placeholder.`
                                     );
                                     e.target.src = "/placeholder-qr.png";
-                                  }
-                                }}
-                                onLoad={() => {
-                                  console.log(
-                                    `Imagen QR cargada correctamente para ${part.qrCodeFilePath}`
-                                  );
-                                }}
-                              />
-                            )}
-                          </>
-                        ) : (
-                          <div className="text-dashboard-text text-xs">
-                            QR no disponible
-                          </div>
-                        )}
+                                  }}
+                                  onLoad={() => {
+                                    console.log(
+                                      `Imagen QR cargada correctamente para ${part.qrCodeFilePath}`
+                                    );
+                                  }}
+                                />
+                              ) : (
+                                <div className="text-dashboard-text text-xs">
+                                  QR no disponible
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="text-dashboard-text text-xs">
+                              QR no disponible
+                            </div>
+                          )}
+                        </td>
+                      )}
+                      <td className="p-3 text-center text-dashboard-text">
+                        <div className="flex items-center justify-center space-x-2">
+                          {editingField?.field === "observations" &&
+                          editingField?.partId === part.id ? (
+                            <input
+                              type="text"
+                              value={part.observations || ""}
+                              onChange={(e) =>
+                                handlePartChange(
+                                  part.id,
+                                  "observations",
+                                  e.target.value
+                                )
+                              }
+                              onBlur={stopEditing}
+                              autoFocus
+                              className="border rounded px-2 py-1 w-32 text-center"
+                            />
+                          ) : (
+                            <>
+                              <span>{part.observations || "N/A"}</span>
+                              <button
+                                onClick={() =>
+                                  startEditing("observations", part.id)
+                                }
+                                className="text-blue-500 hover:text-blue-700"
+                              >
+                                <FaPencilAlt size={14} />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => setShowDeleteModal(part.id)}
-                          className="text-red-500 hover:text-red-700"
-                        >
-                          <FaTimes size={14} />
-                        </button>
-                      </td>
+                      {isAdmin && (
+                        <td className="p-3 text-center">
+                          <button
+                            onClick={() => setShowDeleteModal(part.id)}
+                            className="bg-red-500 text-white text-sm px-3 py-1 rounded hover:bg-red-600 transition-colors duration-300"
+                          >
+                            Eliminar
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -1107,8 +1528,82 @@ const ProjectDetail = () => {
             </div>
           )}
 
-          {/* Modal de confirmación para eliminar */}
-          {showDeleteModal && (
+          {/* Modal de selección de QR para imprimir (solo para ADMIN) */}
+          {isAdmin && showPrintModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
+                <h3 className="text-lg font-semibold mb-4">
+                  Seleccionar QR para imprimir
+                </h3>
+                <div className="mb-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      checked={
+                        project?.parts &&
+                        selectedPartsToPrint.length === project.parts.length
+                      }
+                      onChange={handleSelectAllPartsToPrint}
+                    />
+                    <span>Seleccionar todos</span>
+                  </label>
+                </div>
+                <div className="max-h-60 overflow-y-auto mb-4">
+                  {project.parts.map((part) => (
+                    <label
+                      key={part.id}
+                      className="flex items-center space-x-2 mb-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedPartsToPrint.includes(part.id)}
+                        onChange={() => handleSelectPartToPrint(part.id)}
+                      />
+                      <span>
+                        {part.customPart?.customPartName || "Sin nombre"} (ID:{" "}
+                        {part.id})
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    onClick={() => {
+                      setShowPrintModal(false);
+                      setSelectedPartsToPrint([]);
+                    }}
+                    className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handlePrintSelected}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  >
+                    Imprimir
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Componente oculto para la impresión */}
+          <div style={{ display: "none" }}>
+            <div ref={printRef}>
+              <QRPrintTemplate
+                parts={
+                  project?.parts?.filter((part) =>
+                    selectedPartsToPrint.includes(part.id)
+                  ) || []
+                }
+                qrImageUrls={qrImageUrls}
+                project={project}
+              />
+            </div>
+          </div>
+
+          {/* Modal de confirmación para eliminar (solo para ADMIN) */}
+          {isAdmin && showDeleteModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <div className="bg-white p-6 rounded-lg shadow-lg">
                 <h3 className="text-lg font-semibold mb-4">

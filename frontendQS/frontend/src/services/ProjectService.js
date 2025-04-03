@@ -1,4 +1,4 @@
-// ProjectService.js (optimizado para Vite/React)
+// ProjectService.js
 import axios from "axios";
 import { getAccessToken } from "../auth/AuthService";
 
@@ -99,6 +99,14 @@ const ProjectService = {
     return await handleServiceCall(() =>
       instance.patch(`/${id}/update`, projectData)
     );
+  },
+
+  // Eliminar un proyecto
+  deleteProject: async (id) => {
+    if (import.meta.env.MODE === "development") {
+      console.log(`deleteProject: Eliminando proyecto con ID: ${id}`);
+    }
+    return await handleServiceCall(() => instance.delete(`/${id}/delete`));
   },
 };
 

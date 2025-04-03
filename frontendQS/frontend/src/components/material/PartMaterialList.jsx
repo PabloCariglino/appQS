@@ -10,6 +10,11 @@ const PartMaterialList = () => {
   const [materials, setMaterials] = useState([]);
   const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [editingMaterial, setEditingMaterial] = useState(null);
+  const [updatedName, setUpdatedName] = useState("");
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
 
@@ -32,7 +37,7 @@ const PartMaterialList = () => {
           }
         );
         setMaterials(response.data);
-        setFilteredMaterials(response.data); // Inicializa el filtro
+        setFilteredMaterials(response.data);
       } catch (err) {
         console.error("Error al obtener los materiales:", err);
         setError("Error al cargar los materiales. Inténtalo de nuevo.");
@@ -62,9 +67,65 @@ const PartMaterialList = () => {
       setFilteredMaterials((prevMaterials) =>
         prevMaterials.filter((material) => material.id !== id)
       );
+      setSuccess("Material eliminado exitosamente.");
     } catch (err) {
       console.error("Error al eliminar el material:", err);
       setError("Error al eliminar el material. Inténtalo de nuevo.");
+    }
+  };
+
+  const handleUpdateMaterial = async (id) => {
+    if (!hasChanges) {
+      setError("No hay cambios para actualizar.");
+      return;
+    }
+
+    const token = getAccessToken();
+    if (!token) {
+      setError("No estás autenticado. Por favor, inicia sesión.");
+      return;
+    }
+
+    try {
+      const response = await axios.put(
+        `http://localhost:8080/api/part-materials/${id}`,
+        { materialName: updatedName },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      setMaterials((prevMaterials) =>
+        prevMaterials.map((material) =>
+          material.id === id
+            ? { ...material, materialName: updatedName }
+            : material
+        )
+      );
+      setFilteredMaterials((prevMaterials) =>
+        prevMaterials.map((material) =>
+          material.id === id
+            ? { ...material, materialName: updatedName }
+            : material
+        )
+      );
+
+      setSuccess("Material actualizado exitosamente.");
+      setShowUpdateModal(true);
+      setEditingMaterial(null);
+      setUpdatedName("");
+      setHasChanges(false);
+
+      // Ocultar el modal después de 3 segundos
+      setTimeout(() => {
+        setShowUpdateModal(false);
+      }, 3000);
+    } catch (err) {
+      console.error("Error al actualizar el material:", err);
+      setError("Error al actualizar el material. Inténtalo de nuevo.");
     }
   };
 
@@ -76,7 +137,7 @@ const PartMaterialList = () => {
     const value = e.target.value;
     setSearchTerm(value);
     if (value === "") {
-      setFilteredMaterials(materials); // Reset the filter when search is cleared
+      setFilteredMaterials(materials);
     } else {
       setFilteredMaterials(
         materials.filter((material) =>
@@ -86,6 +147,19 @@ const PartMaterialList = () => {
         )
       );
     }
+  };
+
+  // Detectar cambios en el nombre
+  const handleNameChange = (e) => {
+    setUpdatedName(e.target.value);
+    setHasChanges(true);
+  };
+
+  // Iniciar edición y establecer el nombre inicial
+  const startEditing = (material) => {
+    setEditingMaterial(material.id);
+    setUpdatedName(material.materialName);
+    setHasChanges(false);
   };
 
   return (
@@ -100,8 +174,12 @@ const PartMaterialList = () => {
             {error}
           </div>
         )}
+        {success && (
+          <div className="bg-green-100 text-green-700 p-4 rounded-lg mb-6 text-center">
+            {success}
+          </div>
+        )}
         <div className="w-full max-w-[89vw] mx-auto border border-dashboard-border rounded-lg shadow-md p-6 bg-dashboard-background">
-          {/* Botón de acción */}
           <div className="flex justify-end mb-4">
             <button
               onClick={handleAddMaterialClick}
@@ -111,7 +189,6 @@ const PartMaterialList = () => {
             </button>
           </div>
 
-          {/* Campo de búsqueda */}
           <div className="mb-4 flex justify-end">
             <input
               type="text"
@@ -122,7 +199,6 @@ const PartMaterialList = () => {
             />
           </div>
 
-          {/* Tabla de materiales */}
           {filteredMaterials.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
@@ -130,6 +206,7 @@ const PartMaterialList = () => {
                   <tr className="bg-dashboard-text text-white">
                     <th className="p-3 text-center">ID</th>
                     <th className="p-3 text-center">Nombre del Material</th>
+                    <th className="p-3 text-center">Actualizar</th>
                     <th className="p-3 text-center">Acciones</th>
                   </tr>
                 </thead>
@@ -143,7 +220,49 @@ const PartMaterialList = () => {
                         {material.id}
                       </td>
                       <td className="p-3 text-center text-dashboard-text">
-                        {material.materialName}
+                        {editingMaterial === material.id ? (
+                          <div className="flex items-center justify-center">
+                            <input
+                              type="text"
+                              defaultValue={material.materialName}
+                              onChange={handleNameChange}
+                              className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                            />
+                            <span className="ml-2 text-yellow-500">✏️</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center">
+                            {material.materialName}
+                            <button
+                              onClick={() => startEditing(material)}
+                              className="ml-2 text-yellow-500 hover:text-yellow-600"
+                            >
+                              ✏️
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                      <td className="p-3 text-center">
+                        {editingMaterial === material.id ? (
+                          <button
+                            onClick={() => handleUpdateMaterial(material.id)}
+                            disabled={!hasChanges}
+                            className={`font-medium py-1 px-3 rounded-lg transition-colors duration-300 ${
+                              hasChanges
+                                ? "bg-green-500 hover:bg-green-600 text-white"
+                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            }`}
+                          >
+                            Guardar
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => startEditing(material)}
+                            className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-1 px-3 rounded-lg transition-colors duration-300"
+                          >
+                            Editar
+                          </button>
+                        )}
                       </td>
                       <td className="p-3 text-center">
                         <button
@@ -165,7 +284,20 @@ const PartMaterialList = () => {
           )}
         </div>
 
-        {/* Botón Volver centrado */}
+        {/* Modal animado para confirmación de actualización */}
+        {showUpdateModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full text-center animate-fade-in">
+              <h3 className="text-2xl font-bold text-grill mb-4">
+                ¡Material Actualizado con Éxito!
+              </h3>
+              <p className="text-gray-500 text-sm">
+                El material ha sido actualizado correctamente.
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 flex justify-center">
           <BackButton />
         </div>

@@ -10,6 +10,7 @@ import CustomPartList from "./components/partCustom/CustomPartList";
 import CreateProject from "./components/project/CreateProject";
 import ProjectDetail from "./components/project/ProjectDetail";
 import ProjectList from "./components/project/ProjectList";
+import PartScanner from "./components/Scanner/PartScanner";
 import RegisterUser from "./components/user/RegisterUser";
 import UserList from "./components/user/UserList";
 import AdminDashboard from "./pages/adminDashboard/page/AdminDashboard";
@@ -157,6 +158,16 @@ const App = () => {
           element={
             isLoggedIn && role === "OPERATOR" ? (
               <OperatorDashboard />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+        <Route
+          path="/part-scanner"
+          element={
+            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
+              <PartScanner />
             ) : (
               <Navigate to="/" />
             )

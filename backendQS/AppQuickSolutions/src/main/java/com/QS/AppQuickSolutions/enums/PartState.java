@@ -2,6 +2,9 @@ package com.QS.AppQuickSolutions.enums;
 
 public enum PartState {
 
+    DESARROLLANDO,
+    EN_PLEGADOR,
+    EN_FABRICA,
     DEVOLUCION_FUERA_DE_MEDIDA,
     FALTANTE,
     CONFECCIONADO,

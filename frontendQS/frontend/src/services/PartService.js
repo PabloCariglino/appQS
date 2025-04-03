@@ -1,4 +1,3 @@
-// PartService.js
 import axios from "axios";
 import { getAccessToken } from "../auth/AuthService";
 
@@ -48,6 +47,14 @@ const PartService = {
       console.log(`deletePart: Eliminando pieza con ID: ${id}`);
     }
     return await handleServiceCall(() => instance.delete(`/${id}/delete`));
+  },
+
+  // Nueva función: Obtener una pieza por ID (para el escaneo)
+  getPartById: async (id) => {
+    if (import.meta.env.MODE === "development") {
+      console.log(`getPartById: Obteniendo pieza con ID: ${id}`);
+    }
+    return await handleServiceCall(() => instance.get(`/${id}`));
   },
 };
 
