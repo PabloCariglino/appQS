@@ -48,7 +48,8 @@ public class AuthController {
         try {
             if (jwtTokenProvider.validateRefreshToken(refreshToken)) {
                 String username = jwtTokenProvider.getUsernameFromRefreshToken(refreshToken);
-                String newAccessToken = authService.generateAccessTokenForUser(username);
+                String roles = authService.getRolesForUser(username); // Obtener roles desde AuthService
+                String newAccessToken = jwtTokenProvider.generateAccessTokenFromUsername(username, roles);
                 System.out.println("Access token refreshed successfully for user: " + username);
                 return ResponseEntity.ok(new LoginResponse(newAccessToken, refreshToken));
             } else {

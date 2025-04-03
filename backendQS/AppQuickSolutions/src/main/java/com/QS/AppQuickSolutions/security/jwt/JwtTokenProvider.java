@@ -66,6 +66,17 @@ public class JwtTokenProvider {
                 .compact();
     }
 
+    // Nuevo método para renovación explícita////////////
+    public String generateAccessTokenFromUsername(String username, String roles) {
+        return Jwts.builder()
+                .setSubject(username)
+                .claim("roles", roles)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtAccessExpiration))
+                .signWith(jwtSecret)
+                .compact();
+    }
+
     // Generar Refresh Token
     public String generateRefreshToken(String username) {
         String refreshToken = UUID.randomUUID().toString();
