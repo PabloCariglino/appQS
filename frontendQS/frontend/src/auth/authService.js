@@ -1,8 +1,6 @@
-// authService.js
-import axios from "axios";
+// AuthService.js
 import { jwtDecode } from "jwt-decode";
-
-const API_URL = "http://localhost:8080/api/auth";
+import api from "./AxiosServerConfig";
 
 let accessToken = null;
 
@@ -19,10 +17,14 @@ const isStorageAvailable = () => {
 };
 
 export const setAccessToken = (token) => {
-  if (isStorageAvailable()) {
-    sessionStorage.setItem("token", token);
-  }
   accessToken = token;
+  if (isStorageAvailable()) {
+    try {
+      sessionStorage.setItem("token", token);
+    } catch (error) {
+      console.warn("No se pudo guardar el token en sessionStorage:", error);
+    }
+  }
 };
 
 export const getAccessToken = () => {
@@ -31,9 +33,28 @@ export const getAccessToken = () => {
       accessToken = sessionStorage.getItem("token");
     } catch (error) {
       console.warn("Error al acceder a sessionStorage:", error);
+      accessToken = null;
     }
   }
-  console.log("AccessToken recuperado:", accessToken); // Log adicional para depuración
+  // Verificar si el token está expirado
+  if (accessToken) {
+    try {
+      const decodedToken = jwtDecode(accessToken);
+      const currentTime = Date.now() / 1000;
+      if (decodedToken.exp < currentTime) {
+        console.warn("Token expirado, limpiando...");
+        accessToken = null;
+        if (isStorageAvailable()) {
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("loginTime");
+        }
+      }
+    } catch (error) {
+      console.error("Error al decodificar el token:", error);
+      accessToken = null;
+    }
+  }
+  console.log("AccessToken recuperado:", accessToken);
   return accessToken;
 };
 
@@ -49,7 +70,6 @@ export const getRoleFromToken = () => {
   try {
     const decodedToken = jwtDecode(token);
     const rawRole = decodedToken.roles || null;
-    // Transformar el rol eliminando el prefijo "ROLE_" si existe
     return rawRole ? rawRole.replace("ROLE_", "") : null;
   } catch (error) {
     console.error("Error al decodificar el token:", error);
@@ -59,7 +79,7 @@ export const getRoleFromToken = () => {
 
 export const login = async (email, password) => {
   try {
-    const response = await axios.post(`${API_URL}/login`, { email, password });
+    const response = await api.post("/auth/login", { email, password });
     const { accessToken: newAccessToken } = response.data;
     if (newAccessToken) {
       setAccessToken(newAccessToken);
@@ -74,9 +94,11 @@ export const login = async (email, password) => {
 
 export const backendLogout = async (setIsLoggedIn, setRole) => {
   try {
-    await axios.post(`${API_URL}/logout`);
+    await api.post("/auth/logout");
     accessToken = null;
-    sessionStorage.removeItem("token");
+    if (isStorageAvailable()) {
+      sessionStorage.removeItem("token");
+    }
     setIsLoggedIn(false);
     setRole(null);
   } catch (error) {

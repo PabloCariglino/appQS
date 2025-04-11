@@ -24,7 +24,7 @@ public class PartMaterialController {
     @Autowired
     private PartMaterialService partMaterialService;
 
-    // @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/material-list")
     public ResponseEntity<List<PartMaterial>> getAllPartMaterials() {
         List<PartMaterial> materials = partMaterialService.getAllMaterials();

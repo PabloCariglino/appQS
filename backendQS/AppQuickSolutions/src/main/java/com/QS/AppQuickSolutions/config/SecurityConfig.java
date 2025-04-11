@@ -40,9 +40,9 @@ public class SecurityConfig {
             .requestMatchers("/api/auth/**", "/", "/login", "/static/**").permitAll()
             .requestMatchers("/api/part/**", "/api/project/**", "/api/project/projects-list").hasAnyRole("ADMIN", "OPERATOR")
             .requestMatchers("/image-custom-part/**").hasAnyRole("ADMIN", "OPERATOR") // Proteger las imágenes de CustomPart
-            .requestMatchers("/qr-codes/**").hasAnyRole("ADMIN", "OPERATOR") // Ajustar para los QR
-            .requestMatchers("/api/project/projects/list", "/api/project/create", "/api/events/**", "/api/part-materials/**",
-                "/api/customParts/**", "/api/qr/**", "/api/project/**", "/api/images/**").hasRole("ADMIN")
+            .requestMatchers("/qr-codes/**", "/api/customParts/**").hasAnyRole("ADMIN", "OPERATOR") // Ajustar para los QR
+            .requestMatchers("/api/project/projects/list", "/api/project/create", "/api/events/**", "/api/part-materials/**", "/api/qr/**", "/api/project/**",
+             "/api/images/**").hasRole("ADMIN")
             .requestMatchers("/api/user-dashboard/**", "/api/**").authenticated()
             .anyRequest().authenticated()
         )

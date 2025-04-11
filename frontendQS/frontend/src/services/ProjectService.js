@@ -1,38 +1,6 @@
 // ProjectService.js
-import axios from "axios";
-import { getAccessToken } from "../auth/AuthService";
+import api from "../auth/AxiosServerConfig";
 
-// Configuración base de Axios para proyectos
-const API_URL = "http://localhost:8080/api/project";
-const instance = axios.create({
-  baseURL: API_URL,
-});
-
-// Interceptor para agregar el token JWT a todas las solicitudes
-instance.interceptors.request.use(
-  (config) => {
-    const token = getAccessToken();
-    if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`;
-      if (import.meta.env.MODE === "development") {
-        console.log("Token enviado en la solicitud:", token); // Log solo en desarrollo
-      }
-    } else {
-      if (import.meta.env.MODE === "development") {
-        console.warn("Token no disponible para la solicitud.");
-      }
-    }
-    return config;
-  },
-  (error) => {
-    if (import.meta.env.MODE === "development") {
-      console.error("Error en el interceptor de la solicitud:", error);
-    }
-    return Promise.reject(error);
-  }
-);
-
-// Funciones de servicio para interactuar con el backend
 const ProjectService = {
   // Crear un nuevo proyecto con las piezas
   createNewProject: async (projectDto, partDtos) => {
@@ -41,12 +9,12 @@ const ProjectService = {
     }
     const data = { project: projectDto, parts: partDtos };
     try {
-      const response = await instance.post("/create", data);
+      const response = await api.post("/project/create", data);
       return {
         success: true,
         data: {
-          project: response.data, // El backend devuelve directamente el Project
-          parts: response.data.parts || [], // Asegúrate de que el backend devuelva las piezas con qrCodeFilePath
+          project: response.data,
+          parts: response.data.parts || [],
         },
       };
     } catch (error) {
@@ -70,7 +38,7 @@ const ProjectService = {
     if (import.meta.env.MODE === "development") {
       console.log("fetchProjects: Realizando llamada al backend...");
     }
-    return await handleServiceCall(() => instance.get("/list"));
+    return await handleServiceCall(() => api.get("/project/list"));
   },
 
   // Obtener un proyecto por ID
@@ -78,7 +46,7 @@ const ProjectService = {
     if (import.meta.env.MODE === "development") {
       console.log(`fetchProjectById: Solicitando proyecto con ID: ${id}`);
     }
-    return await handleServiceCall(() => instance.get(`/${id}`));
+    return await handleServiceCall(() => api.get(`/project/${id}`));
   },
 
   // Actualizar un proyecto
@@ -87,17 +55,17 @@ const ProjectService = {
       console.log(`updateProjectById: Actualizando proyecto con ID: ${id}`);
     }
     return await handleServiceCall(() =>
-      instance.put(`/${id}/update`, projectData)
+      api.put(`/project/${id}/update`, projectData)
     );
   },
 
-  // Actualizar un proyecto
+  // Actualizar un proyecto (parcialmente con PATCH)
   updateProject: async (id, projectData) => {
     if (import.meta.env.MODE === "development") {
       console.log(`updateProject: Actualizando proyecto con ID: ${id}`);
     }
     return await handleServiceCall(() =>
-      instance.patch(`/${id}/update`, projectData)
+      api.patch(`/project/${id}/update`, projectData)
     );
   },
 
@@ -106,7 +74,7 @@ const ProjectService = {
     if (import.meta.env.MODE === "development") {
       console.log(`deleteProject: Eliminando proyecto con ID: ${id}`);
     }
-    return await handleServiceCall(() => instance.delete(`/${id}/delete`));
+    return await handleServiceCall(() => api.delete(`/project/${id}/delete`));
   },
 };
 

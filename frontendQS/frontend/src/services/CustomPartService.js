@@ -1,29 +1,11 @@
-import axios from "axios";
-import { getAccessToken } from "../auth/AuthService";
-
-const API_URL = "http://localhost:8080/api/customParts";
-const instance = axios.create({ baseURL: API_URL });
-
-// Interceptor para agregar el token JWT
-instance.interceptors.request.use(
-  (config) => {
-    const token = getAccessToken();
-    if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`;
-      console.log("Token enviado:", token);
-    } else {
-      console.warn("No se encontró token para la solicitud.");
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+//CustomPartService.js
+import api from "../auth/AxiosServerConfig"; // Reemplazar axios por api
 
 const CustomPartService = {
   fetchCustomParts: async () => {
     console.log("Obteniendo lista de piezas personalizadas...");
     try {
-      const response = await instance.get("/custom-part-list");
+      const response = await api.get("/customParts/custom-part-list"); // Ajustar la ruta completa
       console.log("Piezas personalizadas recibidas:", response.data);
       return response.data.map((part) => ({
         id: part.id,
@@ -39,7 +21,7 @@ const CustomPartService = {
   fetchCustomPartById: async (id) => {
     console.log(`Obteniendo pieza personalizada con ID ${id}...`);
     try {
-      const response = await instance.get(`/${id}`);
+      const response = await api.get(`/customParts/${id}`); // Ajustar la ruta completa
       console.log("Pieza personalizada recibida:", response.data);
       return {
         id: response.data.id,
@@ -61,7 +43,7 @@ const CustomPartService = {
     }
 
     try {
-      const response = await instance.post("", formData, {
+      const response = await api.post("/customParts", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -81,7 +63,7 @@ const CustomPartService = {
     if (imageFile) formData.append("image", imageFile);
 
     try {
-      const response = await instance.put(`/${id}`, formData, {
+      const response = await api.put(`/customParts/${id}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -97,7 +79,7 @@ const CustomPartService = {
   deleteCustomPart: async (id) => {
     console.log(`Eliminando pieza personalizada con ID ${id}...`);
     try {
-      await instance.delete(`/${id}`);
+      await api.delete(`/customParts/${id}`);
       console.log("Pieza personalizada eliminada exitosamente.");
     } catch (error) {
       console.error("Error al eliminar pieza personalizada:", error);
@@ -111,11 +93,15 @@ const CustomPartService = {
     formData.append("image", imageFile);
 
     try {
-      const response = await instance.post(`/${id}/upload-image`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const response = await api.post(
+        `/customParts/${id}/upload-image`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
       console.log("Imagen subida exitosamente:", response.data);
       return response.data;
     } catch (error) {

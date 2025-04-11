@@ -35,8 +35,12 @@ public enum PartName {
     PIEZA_PERSONALIZADA("pieza_personalizada.png"),
 
     // PARRILLA
-    LATERAL_MARCO_PARRILLA("lateral_marco_parrilla.png"),
-    FRENTE_MARCO_PARRILLA("frente_marco_parrilla.png"),
+    LATERAL_MARCO_PARRILLA("lateral_marco_parrilla.png"),// ENLOSADO
+    FRENTE_MARCO_PARRILLA("frente_marco_parrilla.png"),// ENLOSADO
+    // ENLOSADO
+    // PAÑO DE PARRILLA , OPCION ENLOSADO
+    // ACHURERO , CON ENLOSADO
+    // PLANCHETA , CON ENLOSAR
     CANASTO_FOGONERO("canasto_fogonero.png");
 
     private String imageFileName;

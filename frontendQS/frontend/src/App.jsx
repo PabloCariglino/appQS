@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import OperatorDashboard from "./../src/pages/operatorDashboard/page/OperatorDashboard";
 import { getRoleFromToken, isAuthenticated } from "./auth/AuthService";
 import useAuthContext from "./auth/UseAuthContext";
@@ -20,6 +26,7 @@ import Login from "./pages/home/pages/Login";
 const App = () => {
   const { isLoggedIn, role, setRole, setIsLoggedIn } = useAuthContext();
   const location = useLocation();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,6 +36,10 @@ const App = () => {
     if (tokenValid) {
       setIsLoggedIn(true);
       setRole(userRole);
+      // Guardar tiempo de login si no existe
+      if (!sessionStorage.getItem("loginTime")) {
+        sessionStorage.setItem("loginTime", Date.now());
+      }
     } else {
       setIsLoggedIn(false);
       setRole(null);
@@ -36,6 +47,28 @@ const App = () => {
 
     setIsLoading(false); // Marcar como cargado
   }, [setIsLoggedIn, setRole]);
+
+  // Deslogeo automatico
+  useEffect(() => {
+    const checkTokenExpiration = () => {
+      const loginTime = sessionStorage.getItem("loginTime");
+      if (loginTime) {
+        const elapsed = Date.now() - parseInt(loginTime);
+        console.log("Tiempo transcurrido:", elapsed); // Para depurar
+        if (elapsed >= 8 * 60 * 60 * 1000) {
+          console.log("Expiró, redirigiendo..."); // Para depurar
+          sessionStorage.removeItem("token");
+          sessionStorage.removeItem("loginTime");
+          setIsLoggedIn(false);
+          setRole(null);
+          navigate("/login");
+        }
+      }
+    };
+
+    const interval = setInterval(checkTokenExpiration, 55000); // Revisa cada 55 segundos
+    return () => clearInterval(interval);
+  }, [navigate, setIsLoggedIn, setRole]);
 
   if (isLoading) {
     return <div>Cargando...</div>;

@@ -1,34 +1,5 @@
-import axios from "axios";
-import { getAccessToken } from "../auth/AuthService";
-
-const API_URL = "http://localhost:8080/api/part";
-const instance = axios.create({
-  baseURL: API_URL,
-});
-
-// Interceptor para agregar el token JWT
-instance.interceptors.request.use(
-  (config) => {
-    const token = getAccessToken();
-    if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`;
-      if (import.meta.env.MODE === "development") {
-        console.log("Token enviado en la solicitud:", token);
-      }
-    } else {
-      if (import.meta.env.MODE === "development") {
-        console.warn("Token no disponible para la solicitud.");
-      }
-    }
-    return config;
-  },
-  (error) => {
-    if (import.meta.env.MODE === "development") {
-      console.error("Error en el interceptor de la solicitud:", error);
-    }
-    return Promise.reject(error);
-  }
-);
+// PartService.js
+import api from "../auth/AxiosServerConfig";
 
 const PartService = {
   // Actualizar una pieza
@@ -37,7 +8,7 @@ const PartService = {
       console.log(`updatePart: Actualizando pieza con ID: ${id}`);
     }
     return await handleServiceCall(() =>
-      instance.put(`/${id}/update`, partData)
+      api.put(`/part/${id}/update`, partData)
     );
   },
 
@@ -46,7 +17,7 @@ const PartService = {
     if (import.meta.env.MODE === "development") {
       console.log(`deletePart: Eliminando pieza con ID: ${id}`);
     }
-    return await handleServiceCall(() => instance.delete(`/${id}/delete`));
+    return await handleServiceCall(() => api.delete(`/part/${id}/delete`));
   },
 
   // Nueva función: Obtener una pieza por ID (para el escaneo)
@@ -54,7 +25,7 @@ const PartService = {
     if (import.meta.env.MODE === "development") {
       console.log(`getPartById: Obteniendo pieza con ID: ${id}`);
     }
-    return await handleServiceCall(() => instance.get(`/${id}`));
+    return await handleServiceCall(() => api.get(`/part/${id}`));
   },
 };
 

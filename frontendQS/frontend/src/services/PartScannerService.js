@@ -1,48 +1,12 @@
-import axios from "axios";
-import { getAccessToken } from "../auth/AuthService";
-
-const API_URL = "http://localhost:8080/api";
-const instance = axios.create({
-  baseURL: API_URL,
-});
-
-instance.interceptors.request.use(
-  (config) => {
-    const token = getAccessToken();
-    if (token) {
-      config.headers["Authorization"] = `Bearer ${token}`;
-      if (import.meta.env.MODE === "development") {
-        console.log(
-          "Token enviado en la solicitud (PartScannerService):",
-          token
-        );
-      }
-    } else {
-      if (import.meta.env.MODE === "development") {
-        console.warn(
-          "Token no disponible para la solicitud (PartScannerService)."
-        );
-      }
-    }
-    return config;
-  },
-  (error) => {
-    if (import.meta.env.MODE === "development") {
-      console.error(
-        "Error en el interceptor de la solicitud (PartScannerService):",
-        error
-      );
-    }
-    return Promise.reject(error);
-  }
-);
+//PartScannerService.js
+import api from "../auth/AxiosServerConfig";
 
 const PartScannerService = {
   getPartById: async (partId) => {
     if (import.meta.env.MODE === "development") {
       console.log(`getPartById: Solicitando pieza con ID: ${partId}`);
     }
-    return await handleServiceCall(() => instance.get(`/part/${partId}`));
+    return await handleServiceCall(() => api.get(`/part/${partId}`));
   },
 
   updatePart: async (partId, partData) => {
@@ -50,7 +14,7 @@ const PartScannerService = {
       console.log(`updatePart: Actualizando pieza con ID: ${partId}`);
     }
     return await handleServiceCall(() =>
-      instance.put(`/part/${partId}/update`, partData)
+      api.put(`/part/${partId}/update`, partData)
     );
   },
 
@@ -59,7 +23,7 @@ const PartScannerService = {
       console.log(`getPartImage: Solicitando imagen: ${imagePath}`);
     }
     try {
-      const response = await instance.get(`/image-custom-part/${imagePath}`, {
+      const response = await api.get(`/image-custom-part/${imagePath}`, {
         responseType: "blob",
       });
       if (import.meta.env.MODE === "development") {
@@ -85,7 +49,7 @@ const PartScannerService = {
       console.log(`saveScannedPart: Guardando pieza escaneada:`, scannedPart);
     }
     return await handleServiceCall(() =>
-      instance.post(`/scanned-parts`, scannedPart)
+      api.post(`/scanned-parts`, scannedPart)
     );
   },
 
@@ -93,7 +57,7 @@ const PartScannerService = {
     if (import.meta.env.MODE === "development") {
       console.log(`getScannedParts: Solicitando piezas escaneadas`);
     }
-    return await handleServiceCall(() => instance.get(`/scanned-parts`));
+    return await handleServiceCall(() => api.get(`/scanned-parts`));
   },
 };
 
