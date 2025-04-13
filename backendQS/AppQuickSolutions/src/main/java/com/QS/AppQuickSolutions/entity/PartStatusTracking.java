@@ -50,4 +50,11 @@ public class PartStatusTracking {
     private Long taskDuration; // Duración de la tarea en minutos
 
     private boolean isCompleted = false; //estado para saber si en la píeza se completo o no su trabajo
+
+    // @Column
+    // private boolean isReadyForDelivery = false; 
+    // Para INSTALACION_DOMICILIO
+
+    @Column
+    private String description; // Para describir problemas (REPARACION, DEVOLUCION_FUERA_DE_MEDIDA, etc.)
 }

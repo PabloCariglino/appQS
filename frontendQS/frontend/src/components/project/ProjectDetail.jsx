@@ -34,8 +34,7 @@ const useBeforeUnload = (hasUnsavedChanges) => {
 const PartStateOptions = [
   "DESARROLLO",
   "EN_PRODUCCION",
-  "EN_FABRICA",
-  "CONTROL_CALIDAD",
+  "CONTROL_CALIDAD_EN_FABRICA",
   "SOLDADO_FLAPEADO",
   "FOFATIZADO_LIJADO",
   "PINTADO",

@@ -20,6 +20,8 @@ public interface PartRepository extends JpaRepository<Part, UUID> {
 
     List<Part> findByProjectId(Long projectId); // Método para encontrar partes por ID de proyecto
 
+    Optional<Part> findById(UUID partId);
+
     
 
 }

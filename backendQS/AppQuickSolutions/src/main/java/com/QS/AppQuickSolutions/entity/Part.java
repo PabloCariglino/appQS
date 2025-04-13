@@ -57,7 +57,10 @@ public class Part {
     private Boolean qualityControlState; //Control de calidad de pieza
 
     @Enumerated(EnumType.STRING)
-    private PartState partState;
+    private PartState partState; //estados de pieza, categorias
 
     private String observations; //Observaciones
+
+    @Column
+    private boolean isReadyForDelivery = false; // Para INSTALACION_DOMICILIO
 }

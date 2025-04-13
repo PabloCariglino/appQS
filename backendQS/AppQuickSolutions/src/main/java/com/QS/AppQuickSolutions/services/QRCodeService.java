@@ -172,4 +172,26 @@ public class QRCodeService {
         // Generar un nuevo QR con los datos actualizados
         return generateQRCodeForPartDto(partDto);
     }
+
+
+    // GENERACION Y ESCANEO PARA CONFIRMACION DE ENVIO A INSTALACION DE LAS PIEZAS
+    public String generateCustomQRCode(String qrData, String fileName) throws WriterException, IOException {
+        return generateQRCodeImage(qrData, 300, 300, fileName);
+    }
+    
+    public Part scanDeliveryQRCode(String qrData) {
+        String[] qrParts = qrData.split(",");
+        String partIdString = qrParts[1].split(":")[1].trim();
+        UUID partId = UUID.fromString(partIdString);
+    
+        Part part = partRepository.findById(partId)
+                .orElseThrow(() -> new RuntimeException("Pieza no encontrada"));
+    
+        if (!part.isReadyForDelivery()) {
+            part.setReadyForDelivery(true);
+            return partRepository.save(part);
+        } else {
+            throw new RuntimeException("Pieza ya marcada como lista para entrega");
+        }
+    }
 }
