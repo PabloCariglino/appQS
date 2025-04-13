@@ -32,18 +32,20 @@ const useBeforeUnload = (hasUnsavedChanges) => {
 
 // Enum para los estados de la pieza (mapeado desde el backend)
 const PartStateOptions = [
-  "DESARROLLANDO",
-  "EN_PLEGADOR",
+  "DESARROLLO",
+  "EN_PRODUCCION",
   "EN_FABRICA",
-  "DEVOLUCION_FUERA_DE_MEDIDA",
-  "FALTANTE",
-  "CONFECCIONADO",
+  "CONTROL_CALIDAD",
+  "SOLDADO_FLAPEADO",
+  "FOFATIZADO_LIJADO",
   "PINTADO",
-  "REPINTANDO_POR_GOLPE_O_RAYON",
   "EMBALADO",
-  "EN_DEPOSITO",
-  "DESPACHADO",
-  "REPARACION_PENDIENTE",
+  "INSTALACION_DOMICILIO",
+  "INSTALADO_EXITOSO",
+  "FALTANTE",
+  "DEVOLUCION_FUERA_DE_MEDIDA",
+  "REPINTANDO_POR_GOLPE_O_RAYON",
+  "REPARACION",
 ];
 
 const ProjectDetail = () => {

@@ -108,7 +108,7 @@ public class ProjectService {
         part.setWidthMm(partDto.getWidthMm());
         part.setObservations(partDto.getObservations());
         part.setPartState(partDto.getPartState());
-        part.setQualityControlState(partDto.getQualityControlState()); // Corregido: debería ser partDto.getQualityControlState()
+        part.setQualityControlState(partDto.getQualityControlState()); 
         part.setReceptionState(false); // Inicializar explícitamente en false
         part.setScanDateTime(null); // Valor por defecto
     }
