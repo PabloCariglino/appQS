@@ -1,12 +1,9 @@
-import ProjectList from "../../../components/project/ProjectList";
+import Tasks from "../../../components/task/Tasks";
 
 const OperatorDashboard = () => {
   return (
     <div>
-      <h1>Operator Dashboard</h1>
-      <h1>Operator Dashboard</h1>
-
-      <ProjectList />
+      <Tasks />
     </div>
   );
 };

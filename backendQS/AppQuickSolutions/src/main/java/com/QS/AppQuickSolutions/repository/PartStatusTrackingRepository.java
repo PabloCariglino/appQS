@@ -28,4 +28,6 @@ public interface PartStatusTrackingRepository extends JpaRepository<PartStatusTr
 
     // Buscar piezas por categoría (PartState) que no estén completadas
     List<PartStatusTracking> findByPartStateAndIsCompletedFalse(PartState partState);
+
+    Optional<PartStatusTracking> findByPartAndIsCompletedFalse(Part part);
 }

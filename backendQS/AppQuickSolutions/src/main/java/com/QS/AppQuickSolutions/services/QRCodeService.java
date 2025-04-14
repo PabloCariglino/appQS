@@ -15,7 +15,10 @@ import org.springframework.stereotype.Service;
 
 import com.QS.AppQuickSolutions.dto.PartDto;
 import com.QS.AppQuickSolutions.entity.Part;
+import com.QS.AppQuickSolutions.entity.PartStatusTracking;
+import com.QS.AppQuickSolutions.enums.PartState;
 import com.QS.AppQuickSolutions.repository.PartRepository;
+import com.QS.AppQuickSolutions.repository.PartStatusTrackingRepository;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
@@ -31,6 +34,9 @@ public class QRCodeService {
 
     @Autowired
     private PartRepository partRepository;
+
+    @Autowired
+    private PartStatusTrackingRepository partStatusTrackingRepository;
 
     /**
      * Genera los datos del QR a partir de un Part entity.
@@ -113,8 +119,8 @@ public class QRCodeService {
     }
 
     /**
-     * Actualiza el estado de una pieza después de escanear su QR.
-     */
+    * Actualiza el estado de una pieza después de escanear su QR.
+    */
     public Part scanQRCode(String qrData) {
         String[] qrParts = qrData.split("\n");
         String partIdString = qrParts[0].split(":")[1].trim();
@@ -126,7 +132,27 @@ public class QRCodeService {
         // Cambiar el estado de la pieza a "recibida" y actualizar el scanDateTime
         part.setReceptionState(true);
         part.setScanDateTime(LocalDateTime.now());
-        return partRepository.save(part);
+
+        // Cambiar el estado de la pieza a CONTROL_CALIDAD
+        part.setPartState(PartState.CONTROL_CALIDAD_EN_FABRICA);
+        partRepository.save(part);
+
+        // Verificar si ya hay un seguimiento activo para esta pieza
+        partStatusTrackingRepository.findByPartAndIsCompletedFalse(part)
+                .ifPresent(tracking -> {
+                    throw new RuntimeException("La pieza ya tiene un seguimiento activo");
+                });
+
+        // Crear un nuevo registro de seguimiento
+        PartStatusTracking tracking = new PartStatusTracking();
+        tracking.setPart(part);
+        tracking.setPartState(PartState.CONTROL_CALIDAD_EN_FABRICA);
+        tracking.setStartTime(LocalDateTime.now());
+        tracking.setCompleted(false);
+        // No asignamos un operador, ya que el escaneo es un proceso automático
+        partStatusTrackingRepository.save(tracking);
+
+        return part;
     }
 
     /**

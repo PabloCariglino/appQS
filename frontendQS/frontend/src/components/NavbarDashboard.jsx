@@ -92,7 +92,7 @@ function Navbar() {
                   Inicio
                 </button>
               </li>
-              {isLoggedIn && role === "ADMIN" && (
+              {isLoggedIn && (role === "ADMIN" || role === "OPERATOR") && (
                 <li className="my-1 md:my-0">
                   <Link
                     to="/project-list"

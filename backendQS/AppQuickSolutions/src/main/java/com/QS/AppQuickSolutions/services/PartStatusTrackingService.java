@@ -188,9 +188,7 @@ public class PartStatusTrackingService {
     // Método auxiliar para avanzar entre estados (respetando reglas de PartState)
     private PartState getNextState(PartState currentState, LocalDateTime endTime, PartStatusTracking tracking) {
         switch (currentState) {
-            case EN_FABRICA:
-                return PartState.CONTROL_CALIDAD;
-            case CONTROL_CALIDAD:
+            case CONTROL_CALIDAD_EN_FABRICA:
                 return PartState.SOLDADO_FLAPEADO; // Por defecto, pero se puede cambiar manualmente
             case SOLDADO_FLAPEADO:
                 return PartState.FOFATIZADO_LIJADO;

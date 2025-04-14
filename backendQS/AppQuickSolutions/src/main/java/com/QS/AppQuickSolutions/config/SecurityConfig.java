@@ -38,7 +38,7 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource()))
         .authorizeHttpRequests(authz -> authz
             .requestMatchers("/api/auth/**", "/", "/login", "/static/**").permitAll()
-            .requestMatchers("/api/part/**", "/api/project/**", "/api/project/projects-list").hasAnyRole("ADMIN", "OPERATOR")
+            .requestMatchers("/api/part/**", "/api/project/**", "/api/project/projects-list","/api/part-tracking").hasAnyRole("ADMIN", "OPERATOR")
             .requestMatchers("/image-custom-part/**").hasAnyRole("ADMIN", "OPERATOR") // Proteger las imágenes de CustomPart
             .requestMatchers("/qr-codes/**", "/api/customParts/**").hasAnyRole("ADMIN", "OPERATOR") // Ajustar para los QR
             .requestMatchers("/api/project/projects/list", "/api/project/create", "/api/events/**", "/api/part-materials/**", "/api/qr/**", "/api/project/**",
