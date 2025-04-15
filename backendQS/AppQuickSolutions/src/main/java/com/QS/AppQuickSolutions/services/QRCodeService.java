@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.QS.AppQuickSolutions.dto.PartDto;
 import com.QS.AppQuickSolutions.entity.Part;
@@ -121,13 +122,16 @@ public class QRCodeService {
     /**
     * Actualiza el estado de una pieza después de escanear su QR.
     */
+    @Transactional
     public Part scanQRCode(String qrData) {
         String[] qrParts = qrData.split("\n");
         String partIdString = qrParts[0].split(":")[1].trim();
         UUID partId = UUID.fromString(partIdString);
 
         Part part = partRepository.findById(partId)
-                .orElseThrow(() -> new RuntimeException("Pieza no encontrada"));
+            .orElseThrow(() -> new RuntimeException("Pieza no encontrada"));
+
+        System.out.println("Antes de actualizar - partState: " + part.getPartState());
 
         // Cambiar el estado de la pieza a "recibida" y actualizar el scanDateTime
         part.setReceptionState(true);
@@ -135,13 +139,19 @@ public class QRCodeService {
 
         // Cambiar el estado de la pieza a CONTROL_CALIDAD
         part.setPartState(PartState.CONTROL_CALIDAD_EN_FABRICA);
-        partRepository.save(part);
+
+        System.out.println("Después de setear - partState: " + part.getPartState());
+
+        // Guardar los cambios en la pieza
+        part = partRepository.saveAndFlush(part);
+
+        System.out.println("Después de guardar - partState: " + part.getPartState());
 
         // Verificar si ya hay un seguimiento activo para esta pieza
         partStatusTrackingRepository.findByPartAndIsCompletedFalse(part)
-                .ifPresent(tracking -> {
-                    throw new RuntimeException("La pieza ya tiene un seguimiento activo");
-                });
+            .ifPresent(tracking -> {
+                throw new RuntimeException("La pieza ya tiene un seguimiento activo");
+            });
 
         // Crear un nuevo registro de seguimiento
         PartStatusTracking tracking = new PartStatusTracking();
@@ -152,7 +162,7 @@ public class QRCodeService {
         // No asignamos un operador, ya que el escaneo es un proceso automático
         partStatusTrackingRepository.save(tracking);
 
-        return part;
+             return part;
     }
 
     /**

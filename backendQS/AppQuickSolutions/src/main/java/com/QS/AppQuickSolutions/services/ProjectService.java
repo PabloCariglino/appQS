@@ -111,12 +111,14 @@ public class ProjectService {
         part.setQualityControlState(partDto.getQualityControlState()); 
         part.setReceptionState(false); // Inicializar explícitamente en false
         part.setScanDateTime(null); // Valor por defecto
+        part.setReadyForDelivery(false);
     }
 
     public List<PartDto> getPartsByProject(Long projectId) {
         Project project = getProjectById(projectId);
         return project.getParts().stream().map(part -> {
             PartDto partDto = new PartDto();
+
             partDto.setId(part.getId());
             partDto.setCustomPart(part.getCustomPart());
             partDto.setPartMaterial(part.getPartMaterial());
@@ -132,6 +134,9 @@ public class ProjectService {
             partDto.setPartState(part.getPartState());
             partDto.setObservations(part.getObservations());
             partDto.setReceptionState(part.getReceptionState());
+            partDto.setReadyForDelivery(part.isReadyForDelivery());
+            
+           
             return partDto;
         }).collect(Collectors.toList());
     }

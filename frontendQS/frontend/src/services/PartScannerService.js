@@ -57,7 +57,12 @@ const PartScannerService = {
     if (import.meta.env.MODE === "development") {
       console.log(`getScannedParts: Solicitando piezas escaneadas`);
     }
-    return await handleServiceCall(() => api.get(`/scanned-parts`));
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const since = oneWeekAgo.toISOString();
+    return await handleServiceCall(() =>
+      api.get(`/scanned-parts?since=${since}`)
+    );
   },
 };
 

@@ -1,3 +1,4 @@
+//ProjectDetail.jsx
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
 import { useContext, useEffect, useRef, useState } from "react";

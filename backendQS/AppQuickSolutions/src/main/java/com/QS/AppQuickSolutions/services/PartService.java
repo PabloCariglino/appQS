@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.QS.AppQuickSolutions.dto.PartDto;
 import com.QS.AppQuickSolutions.entity.Part;
 import com.QS.AppQuickSolutions.entity.Project;
+import com.QS.AppQuickSolutions.enums.PartState;
 import com.QS.AppQuickSolutions.repository.PartRepository;
 import com.google.zxing.WriterException;
 
@@ -42,6 +43,8 @@ public class PartService {
         part.setObservations(partDto.getObservations());
         part.setReceptionState(false); // Inicializar en false
         part.setScanDateTime(null); // Dejar como null
+        part.setPartState(PartState.EN_PRODUCCION);
+        part.setReadyForDelivery(false);
 
         // Guardar la pieza primero para obtener el ID, pero sin generar QR
         return partRepository.save(part);
@@ -97,6 +100,8 @@ public class PartService {
         part.setQualityControlState(partDto.getQualityControlState());
         part.setScanDateTime(partDto.getScanDateTime() != null ? partDto.getScanDateTime() : null);
         part.setReceptionState(partDto.getReceptionState() != null ? partDto.getReceptionState() : false);
+        part.setReadyForDelivery(false);
+        
     }
 
     public Part scanPart(UUID id) {

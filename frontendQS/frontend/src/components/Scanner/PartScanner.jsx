@@ -1,3 +1,4 @@
+// PartScanner.jsx
 import { BrowserMultiFormatReader } from "@zxing/library";
 import { useContext, useEffect, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
@@ -195,10 +196,12 @@ const PartScanner = () => {
         warningSound.play();
       } else {
         console.log("Actualizando estado de la pieza...");
+        // Actualizar receptionState y scanDateTime
         const updateResponse = await PartScannerService.updatePart(part.id, {
           ...part,
           receptionState: true,
           scanDateTime: new Date().toISOString(),
+          partState: "CONTROL_CALIDAD_EN_FABRICA",
         });
 
         if (!updateResponse.success) {
@@ -396,9 +399,9 @@ const PartScanner = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {scannedParts.map((part, index) => (
+                  {scannedParts.map((part) => (
                     <tr
-                      key={index}
+                      key={part.partId}
                       className="border-b border-dashboard-border hover:bg-gray-100 transition-colors text-sm sm:text-base"
                     >
                       <td

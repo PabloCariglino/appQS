@@ -62,5 +62,5 @@ public class Part {
     private String observations; //Observaciones
 
     @Column
-    private boolean isReadyForDelivery = false; // Para INSTALACION_DOMICILIO
+    private boolean isReadyForDelivery;
 }

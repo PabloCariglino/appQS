@@ -39,6 +39,8 @@ public class PartDto {
     private PartState partState;
 
     private String observations; //Observaciones
-    // private ProjectDto project;
+    
     private Project project;
+
+    private boolean isReadyForDelivery;
 }

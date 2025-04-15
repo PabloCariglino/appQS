@@ -1,3 +1,4 @@
+// Tasks.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import FooterDashboard from "../../components/FooterDashboard";
@@ -29,18 +30,31 @@ const Tasks = () => {
         const controlCalidad = await TaskService.getTasksByState(
           "CONTROL_CALIDAD_EN_FABRICA"
         );
+        console.log("Control Calidad en Fábrica:", controlCalidad); // Depuración
+
         const soldadoFlapeado = await TaskService.getTasksByState(
           "SOLDADO_FLAPEADO"
         );
+        console.log("Soldado Flapeado:", soldadoFlapeado); // Depuración
+
         const fofatizadoLijado = await TaskService.getTasksByState(
           "FOFATIZADO_LIJADO"
         );
+        console.log("Fofatizado Lijado:", fofatizadoLijado); // Depuración
+
         const pintado = await TaskService.getTasksByState("PINTADO");
+        console.log("Pintado:", pintado); // Depuración
+
         const embalado = await TaskService.getTasksByState("EMBALADO");
+        console.log("Embalado:", embalado); // Depuración
+
         const instalacionDomicilio = await TaskService.getTasksByState(
           "INSTALACION_DOMICILIO"
         );
+        console.log("Instalación Domicilio:", instalacionDomicilio); // Depuración
+
         const observadas = await TaskService.getObservedTasks();
+        console.log("Observadas:", observadas); // Depuración
 
         // Ordenar por installationDateTime
         const sortByInstallationDate = (tasks) =>
@@ -51,7 +65,7 @@ const Tasks = () => {
           });
 
         setTasks({
-          CONTROL_CALIDAD: sortByInstallationDate(controlCalidad),
+          CONTROL_CALIDAD_EN_FABRICA: sortByInstallationDate(controlCalidad),
           SOLDADO_FLAPEADO: sortByInstallationDate(soldadoFlapeado),
           FOFATIZADO_LIJADO: sortByInstallationDate(fofatizadoLijado),
           PINTADO: sortByInstallationDate(pintado),
@@ -60,6 +74,7 @@ const Tasks = () => {
           OBSERVADAS: sortByInstallationDate(observadas),
         });
       } catch (err) {
+        console.error("Error al cargar las tareas:", err);
         setError("Error al cargar las tareas. Por favor, intenta de nuevo.");
       } finally {
         setLoading(false);

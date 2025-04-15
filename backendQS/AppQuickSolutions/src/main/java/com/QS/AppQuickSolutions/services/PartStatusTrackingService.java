@@ -37,10 +37,10 @@ public class PartStatusTrackingService {
         PartRepository partRepository,
         UserRepository userRepository,
         QRCodeService qrCodeService) {
-    this.partStatusTrackingRepository = partStatusTrackingRepository;
-    this.partRepository = partRepository;
-    this.userRepository = userRepository;
-    this.qrCodeService = qrCodeService;
+        this.partStatusTrackingRepository = partStatusTrackingRepository;
+        this.partRepository = partRepository;
+        this.userRepository = userRepository;
+        this.qrCodeService = qrCodeService;
     }
 
     // Método para calcular y formatear la duración en días, horas y minutos
@@ -65,7 +65,7 @@ public class PartStatusTrackingService {
             throw new RuntimeException("El operario ya tiene una pieza en proceso");
         }
     
-        // Resto del método sigue igual
+       
         partStatusTrackingRepository.findByPartAndUserOperatorAndIsCompletedFalse(part, operator)
                 .ifPresent(tracking -> {
                     throw new RuntimeException("El operario ya está trabajando en esta pieza");
