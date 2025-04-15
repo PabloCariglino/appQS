@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 
 import com.QS.AppQuickSolutions.entity.Part;
 import com.QS.AppQuickSolutions.entity.Project;
+import com.QS.AppQuickSolutions.enums.PartState;
 
 @Repository
 public interface PartRepository extends JpaRepository<Part, UUID> {
@@ -21,6 +22,10 @@ public interface PartRepository extends JpaRepository<Part, UUID> {
     List<Part> findByProjectId(Long projectId); // Método para encontrar partes por ID de proyecto
 
     Optional<Part> findById(UUID partId);
+
+    // Optional<Part> findByPartState(PartState state);
+    List<Part> findAllByPartState(PartState partState);
+
 
     
 

@@ -2,6 +2,8 @@ package com.QS.AppQuickSolutions.services;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +12,8 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.QS.AppQuickSolutions.dto.OperatorMetricsDTO;
+import com.QS.AppQuickSolutions.dto.PartSummaryDTO;
+import com.QS.AppQuickSolutions.dto.StatePartsDTO;
 import com.QS.AppQuickSolutions.entity.Part;
 import com.QS.AppQuickSolutions.entity.PartStatusTracking;
 import com.QS.AppQuickSolutions.entity.Project;
@@ -30,7 +34,27 @@ public class PartStatusTrackingService {
     private final UserRepository userRepository;
     private final QRCodeService qrCodeService;
 
-    
+    // Estados que se mostrarán como columnas
+    private static final PartState[] DISPLAYED_STATES = {
+        PartState.CONTROL_CALIDAD_EN_FABRICA,
+        PartState.SOLDADO_FLAPEADO,
+        PartState.FOFATIZADO_LIJADO,
+        PartState.PINTADO,
+        PartState.EMBALADO,
+        PartState.INSTALACION_DOMICILIO,
+        PartState.INSTALADO_EXITOSO
+    };
+
+    // Estados considerados como "observadas"
+    private static final PartState[] OBSERVED_STATES = {
+        PartState.FALTANTE,
+        PartState.DEVOLUCION_FUERA_DE_MEDIDA,
+        PartState.REPINTANDO_POR_GOLPE_O_RAYON,
+        PartState.REPARACION
+    };
+
+
+
 
     public PartStatusTrackingService(
         PartStatusTrackingRepository partStatusTrackingRepository,
@@ -249,5 +273,55 @@ public class PartStatusTrackingService {
                 ));
     
         return new OperatorMetricsDTO(operator, lastYearTrackings, avgDurationByCategory);
+    }
+
+    public List<PartSummaryDTO> getPartsByState(PartState state) {
+        return partRepository.findAllByPartState(state).stream()
+                .sorted(Comparator.comparing(part -> part.getProject() != null ? part.getProject().getInstallationDateTime() : null, 
+                    Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<PartSummaryDTO> getObservedParts() {
+        return partRepository.findAll().stream()
+                .filter(part -> Arrays.asList(OBSERVED_STATES).contains(part.getPartState()))
+                .sorted(Comparator.comparing(part -> part.getProject() != null ? part.getProject().getInstallationDateTime() : null, 
+                    Comparator.nullsLast(Comparator.naturalOrder())))
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<StatePartsDTO> getAllPartsByState() {
+        List<StatePartsDTO> stateParts = Arrays.stream(DISPLAYED_STATES)
+                .map(state -> {
+                    StatePartsDTO dto = new StatePartsDTO();
+                    dto.setState(state);
+                    dto.setParts(getPartsByState(state));
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        // Añadir las piezas observadas como una "columna" adicional
+        StatePartsDTO observedDto = new StatePartsDTO();
+        observedDto.setState(null); // No es un PartState real
+        observedDto.setParts(getObservedParts());
+        stateParts.add(observedDto);
+
+        return stateParts;
+    }
+
+    public PartStatusTracking savePartStatusTracking(PartStatusTracking partStatusTracking) {
+        return partStatusTrackingRepository.save(partStatusTracking);
+    }
+
+    private PartSummaryDTO convertToDTO(Part part) {
+        PartSummaryDTO dto = new PartSummaryDTO();
+        dto.setPartId(part.getId());
+        dto.setProjectId(part.getProject() != null ? part.getProject().getId() : null);
+        dto.setPartName(part.getCustomPart() != null ? part.getCustomPart().getCustomPartName() : "Sin nombre");
+        dto.setPartState(part.getPartState());
+        dto.setScanDateTime(part.getScanDateTime());
+        return dto;
     }
 }

@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.QS.AppQuickSolutions.dto.OperatorMetricsDTO;
+import com.QS.AppQuickSolutions.dto.PartSummaryDTO;
+import com.QS.AppQuickSolutions.dto.StatePartsDTO;
 import com.QS.AppQuickSolutions.entity.PartStatusTracking;
 import com.QS.AppQuickSolutions.enums.PartState;
 import com.QS.AppQuickSolutions.services.PartStatusTrackingService;
@@ -61,17 +63,7 @@ public class PartStatusTrackingController {
         return ResponseEntity.ok(partStatusTrackingService.getTrackingsByPartState(partState));
     }
 
-    @GetMapping("/observed")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
-    public ResponseEntity<List<PartStatusTracking>> getObservedParts() {
-        List<PartState> observedStates = Arrays.asList(
-                PartState.FALTANTE, PartState.DEVOLUCION_FUERA_DE_MEDIDA,
-                PartState.REPINTANDO_POR_GOLPE_O_RAYON, PartState.REPARACION);
-        List<PartStatusTracking> observedTrackings = observedStates.stream()
-                .flatMap(state -> partStatusTrackingService.getTrackingsByPartState(state).stream())
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(observedTrackings);
-    }
+   
 
     @GetMapping("/by-project/{projectId}")
     @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
@@ -115,4 +107,47 @@ public class PartStatusTrackingController {
         partStatusTrackingService.deleteTracking(trackingId);
         return ResponseEntity.noContent().build();
     }
+
+  
+
+    // @GetMapping("/observed")
+    // public ResponseEntity<List<PartStatusTracking>> getObservedParts() {
+    //     List<PartStatusTracking> observedParts = partStatusTrackingService.getObservedParts();
+    //     return ResponseEntity.ok(observedParts);
+    // }
+
+    @GetMapping("/observed")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
+    public ResponseEntity<List<PartStatusTracking>> getObservedParts() {
+        List<PartState> observedStates = Arrays.asList(
+                PartState.FALTANTE, PartState.DEVOLUCION_FUERA_DE_MEDIDA,
+                PartState.REPINTANDO_POR_GOLPE_O_RAYON, PartState.REPARACION);
+        List<PartStatusTracking> observedTrackings = observedStates.stream()
+                .flatMap(state -> partStatusTrackingService.getTrackingsByPartState(state).stream())
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(observedTrackings);
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
+    public ResponseEntity<PartStatusTracking> savePartStatusTracking(@RequestBody PartStatusTracking partStatusTracking) {
+        PartStatusTracking savedTracking = partStatusTrackingService.savePartStatusTracking(partStatusTracking);
+        return ResponseEntity.ok(savedTracking);
+    }
+
+    @GetMapping("/by-state/{state}")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
+    public ResponseEntity<List<PartSummaryDTO>> getPartsByState(@PathVariable PartState state) {
+        List<PartSummaryDTO> parts = partStatusTrackingService.getPartsByState(state);
+        return ResponseEntity.ok(parts);
+    }
+
+    @GetMapping("/by-all-states")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
+    public ResponseEntity<List<StatePartsDTO>> getAllPartsByState() {
+        List<StatePartsDTO> stateParts = partStatusTrackingService.getAllPartsByState();
+        return ResponseEntity.ok(stateParts);
+    }
+
+   
 }
