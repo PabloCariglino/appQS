@@ -27,6 +27,18 @@ const PartService = {
     }
     return await handleServiceCall(() => api.get(`/part/${id}`));
   },
+
+  // Nueva función: Obtener piezas por estado
+  getPartsByState: async (state) => {
+    if (import.meta.env.MODE === "development") {
+      console.log(
+        `getPartsByState: Obteniendo piezas para el estado: ${state}`
+      );
+    }
+    return await handleServiceCall(() =>
+      api.get(`/part-tracking/by-state/${state}`)
+    );
+  },
 };
 
 // Manejo centralizado de errores y respuesta

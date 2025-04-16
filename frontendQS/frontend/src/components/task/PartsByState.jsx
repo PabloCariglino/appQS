@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import TaskService from "../../services/TaskService";
+import { useParams } from "react-router-dom";
+import OperatorProfileService from "../../services/OperatorProfileService";
+import PartService from "../../services/PartService";
 import FooterDashboard from "../FooterDashboard";
 import NavbarDashboard from "../NavbarDashboard";
 
@@ -8,72 +9,112 @@ const PartsByState = () => {
   const { state } = useParams();
   const [parts, setParts] = useState([]);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchParts = async () => {
-      const response = await TaskService.getTasksByState(state);
-      if (response.success) {
-        console.log(`Piezas con estado ${state} recibidas:`, response.data);
-        setParts(response.data);
-        setError(null);
-      } else {
-        console.error(
-          `Error al cargar las piezas con estado ${state}:`,
-          response.message
-        );
-        setError(response.message);
+      setLoading(true);
+      console.log("Fetching parts for state:", state);
+      try {
+        const response = await PartService.getPartsByState(state);
+        console.log("Response in PartsByState:", response);
+        if (response.success) {
+          const partsData = Array.isArray(response.data) ? response.data : [];
+          console.log("Parts data:", partsData);
+          setParts(partsData);
+          if (partsData.length === 0) {
+            setError(
+              `No se encontraron piezas en el estado ${state.replace(
+                /_/g,
+                " "
+              )}.`
+            );
+          } else {
+            setError(null);
+          }
+        } else {
+          setError(response.message || "Error al cargar las piezas.");
+        }
+      } catch (err) {
+        setError("Error al obtener las piezas. Por favor, intenta de nuevo.");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchParts();
   }, [state]);
 
-  const handleBack = () => {
-    navigate("/operator");
+  const handleTakeTask = async (partId) => {
+    const confirm = window.confirm(
+      "¿Seguro que desea tomar esta pieza para su producción?"
+    );
+    if (confirm) {
+      const response = await OperatorProfileService.assignPart(partId);
+      if (response.success) {
+        setParts(parts.filter((part) => part.partId !== partId));
+      } else {
+        setError(response.message);
+      }
+    }
   };
 
   return (
     <>
       <NavbarDashboard />
-      <div className="container mx-auto p-4">
-        <h1 className="text-2xl font-bold mb-4 text-center">
-          Piezas en estado: {state}
+      <div className="container mx-auto p-4 sm:p-6 min-h-screen">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center text-gray-800">
+          Piezas en estado {state?.replace(/_/g, " ")}
         </h1>
-        <button
-          onClick={handleBack}
-          className="mb-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-        >
-          Volver
-        </button>
-        {error && (
+        {loading ? (
+          <p className="text-gray-500 text-center text-sm">
+            Cargando piezas...
+          </p>
+        ) : error ? (
           <div
-            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4 text-center"
+            className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-center"
             role="alert"
           >
             {error}
           </div>
-        )}
-        {parts.length > 0 ? (
-          <ul className="space-y-4">
-            {parts.map((part) => (
-              <li key={part.partId} className="border rounded-lg p-4 shadow">
-                <p>
-                  <strong>Proyecto ID:</strong> {part.projectId || "N/A"}
-                </p>
-                <p>
-                  <strong>Pieza ID:</strong> {part.partId}
-                </p>
-                <p>
-                  <strong>Nombre:</strong> {part.partName}
-                </p>
-              </li>
-            ))}
-          </ul>
+        ) : parts.length > 0 ? (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <ul className="space-y-3">
+              {parts.map((part) => (
+                <li
+                  key={part.partId}
+                  className="border-b border-gray-100 pb-3 last:border-b-0 flex justify-between items-center"
+                >
+                  <div>
+                    <p className="text-gray-800 text-sm">
+                      <span className="font-medium">Proyecto ID:</span>{" "}
+                      {part.projectId || "N/A"}
+                    </p>
+                    <p className="text-gray-800 text-sm">
+                      <span className="font-medium">Pieza ID:</span>{" "}
+                      {part.partId}
+                    </p>
+                    <p className="text-gray-800 text-sm">
+                      <span className="font-medium">Nombre:</span>{" "}
+                      {part.partName}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleTakeTask(part.partId)}
+                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  >
+                    Tomar tarea
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : (
-          <p className="text-center text-gray-600">
-            No hay piezas en este estado.
-          </p>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <p className="text-gray-500 text-center text-sm">
+              No hay piezas en este estado.
+            </p>
+          </div>
         )}
       </div>
       <FooterDashboard />

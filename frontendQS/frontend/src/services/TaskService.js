@@ -13,14 +13,14 @@ const TaskService = {
     );
   },
 
-  getTasksByState: async (state) => {
-    if (import.meta.env.MODE === "development") {
-      console.log(`getTasksByState: Solicitando piezas con estado: ${state}`);
-    }
-    return await handleServiceCall(() =>
-      api.get(`/part-tracking/by-state/${state}`)
-    );
-  },
+  // getTasksByState: async (state) => {
+  //   if (import.meta.env.MODE === "development") {
+  //     console.log(`getTasksByState: Solicitando piezas con estado: ${state}`);
+  //   }
+  //   return await handleServiceCall(() =>
+  //     api.get(`/part-tracking/by-state/${state}`)
+  //   );
+  // },
 };
 
 const handleServiceCall = async (apiCall) => {

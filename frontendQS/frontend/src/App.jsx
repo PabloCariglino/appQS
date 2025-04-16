@@ -17,6 +17,8 @@ import CreateProject from "./components/project/CreateProject";
 import ProjectDetail from "./components/project/ProjectDetail";
 import ProjectList from "./components/project/ProjectList";
 import PartScanner from "./components/Scanner/PartScanner";
+import OperatorTasks from "./components/task/OperatorTasks";
+import PartsByState from "./components/task/PartsByState";
 import Tasks from "./components/task/Tasks";
 import RegisterUser from "./components/user/RegisterUser";
 import UserList from "./components/user/UserList";
@@ -212,6 +214,28 @@ const App = () => {
           element={
             isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
               <Tasks />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+        <Route path="*" element={<Navigate to="/" />} />
+
+        <Route
+          path="/parts/state/:state"
+          element={
+            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
+              <PartsByState />
+            ) : (
+              <Navigate to="/" />
+            )
+          }
+        />
+        <Route
+          path="/operator-tasks"
+          element={
+            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
+              <OperatorTasks />
             ) : (
               <Navigate to="/" />
             )

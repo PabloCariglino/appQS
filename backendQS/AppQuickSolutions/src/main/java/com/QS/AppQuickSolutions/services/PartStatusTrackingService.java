@@ -34,27 +34,20 @@ public class PartStatusTrackingService {
     private final UserRepository userRepository;
     private final QRCodeService qrCodeService;
 
-    // Estados que se mostrarán como columnas
-    private static final PartState[] DISPLAYED_STATES = {
+    // Lista única de todos los estados
+    private static final PartState[] ALL_STATES = {
         PartState.CONTROL_CALIDAD_EN_FABRICA,
         PartState.SOLDADO_FLAPEADO,
         PartState.FOFATIZADO_LIJADO,
         PartState.PINTADO,
         PartState.EMBALADO,
         PartState.INSTALACION_DOMICILIO,
-        PartState.INSTALADO_EXITOSO
-    };
-
-    // Estados considerados como "observadas"
-    private static final PartState[] OBSERVED_STATES = {
+        PartState.INSTALADO_EXITOSO,
         PartState.FALTANTE,
         PartState.DEVOLUCION_FUERA_DE_MEDIDA,
         PartState.REPINTANDO_POR_GOLPE_O_RAYON,
         PartState.REPARACION
     };
-
-
-
 
     public PartStatusTrackingService(
         PartStatusTrackingRepository partStatusTrackingRepository,
@@ -89,7 +82,6 @@ public class PartStatusTrackingService {
             throw new RuntimeException("El operario ya tiene una pieza en proceso");
         }
     
-       
         partStatusTrackingRepository.findByPartAndUserOperatorAndIsCompletedFalse(part, operator)
                 .ifPresent(tracking -> {
                     throw new RuntimeException("El operario ya está trabajando en esta pieza");
@@ -179,16 +171,16 @@ public class PartStatusTrackingService {
     }
 
     public String generateQrForEmbalado(PartStatusTracking tracking) throws java.io.IOException {
-    Part part = tracking.getPart();
-    Project project = part.getProject();
-    String qrData = String.format("ProjectID: %d, PartID: %s, PartName: %s, Client: %s",
-            project.getId(), part.getId().toString(), part.getCustomPart().getCustomPartName(), project.getClientAlias());
-    String fileName = part.getId() + "_embalado_qr.png";
-    try {
-        return qrCodeService.generateCustomQRCode(qrData, fileName);
-    } catch (WriterException | IOException e) {
-        throw new RuntimeException("Error generando QR para EMBALADO", e);
-    }  
+        Part part = tracking.getPart();
+        Project project = part.getProject();
+        String qrData = String.format("ProjectID: %d, PartID: %s, PartName: %s, Client: %s",
+                project.getId(), part.getId().toString(), part.getCustomPart().getCustomPartName(), project.getClientAlias());
+        String fileName = part.getId() + "_embalado_qr.png";
+        try {
+            return qrCodeService.generateCustomQRCode(qrData, fileName);
+        } catch (WriterException | IOException e) {
+            throw new RuntimeException("Error generando QR para EMBALADO", e);
+        }  
     }
 
     public void markAsReadyForDelivery(String qrData) {
@@ -196,17 +188,17 @@ public class PartStatusTrackingService {
     }
 
     private void checkProjectCompletion(Long projectId) {
-    List<PartStatusTracking> projectTrackings = getTrackingsByProject(projectId);
-    boolean allReady = projectTrackings.stream()
-            .filter(t -> t.getPartState() == PartState.INSTALACION_DOMICILIO)
-            .map(PartStatusTracking::getPart)
-            .allMatch(Part::isReadyForDelivery);
-    if (allReady) {
-        projectTrackings.forEach(t -> {
-            t.setPartState(PartState.INSTALADO_EXITOSO);
-            partStatusTrackingRepository.save(t);
-        });
-    }
+        List<PartStatusTracking> projectTrackings = getTrackingsByProject(projectId);
+        boolean allReady = projectTrackings.stream()
+                .filter(t -> t.getPartState() == PartState.INSTALACION_DOMICILIO)
+                .map(PartStatusTracking::getPart)
+                .allMatch(Part::isReadyForDelivery);
+        if (allReady) {
+            projectTrackings.forEach(t -> {
+                t.setPartState(PartState.INSTALADO_EXITOSO);
+                partStatusTrackingRepository.save(t);
+            });
+        }
     }
 
     // Método auxiliar para avanzar entre estados (respetando reglas de PartState)
@@ -233,7 +225,7 @@ public class PartStatusTrackingService {
         }
     }
     
-    // método para transiciones manuales con descripción
+    // Método para transiciones manuales con descripción
     public PartStatusTracking manualTransition(UUID partId, Long operatorId, PartState newState, String description) {
         Part part = partRepository.findById(partId).orElseThrow();
         User operator = userRepository.findById(operatorId).orElseThrow();
@@ -283,17 +275,8 @@ public class PartStatusTrackingService {
                 .collect(Collectors.toList());
     }
 
-    public List<PartSummaryDTO> getObservedParts() {
-        return partRepository.findAll().stream()
-                .filter(part -> Arrays.asList(OBSERVED_STATES).contains(part.getPartState()))
-                .sorted(Comparator.comparing(part -> part.getProject() != null ? part.getProject().getInstallationDateTime() : null, 
-                    Comparator.nullsLast(Comparator.naturalOrder())))
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
-    }
-
     public List<StatePartsDTO> getAllPartsByState() {
-        List<StatePartsDTO> stateParts = Arrays.stream(DISPLAYED_STATES)
+        return Arrays.stream(ALL_STATES)
                 .map(state -> {
                     StatePartsDTO dto = new StatePartsDTO();
                     dto.setState(state);
@@ -301,14 +284,6 @@ public class PartStatusTrackingService {
                     return dto;
                 })
                 .collect(Collectors.toList());
-
-        // Añadir las piezas observadas como una "columna" adicional
-        StatePartsDTO observedDto = new StatePartsDTO();
-        observedDto.setState(null); // No es un PartState real
-        observedDto.setParts(getObservedParts());
-        stateParts.add(observedDto);
-
-        return stateParts;
     }
 
     public PartStatusTracking savePartStatusTracking(PartStatusTracking partStatusTracking) {

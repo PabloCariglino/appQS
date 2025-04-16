@@ -56,12 +56,12 @@ public class PartStatusTrackingController {
         return ResponseEntity.ok(partStatusTrackingService.manualTransition(partId, operatorId, newState, description));
     }
 
-    @GetMapping("/by-state/{partState}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
-    public ResponseEntity<List<PartStatusTracking>> getTrackingsByPartState(
-            @PathVariable PartState partState) {
-        return ResponseEntity.ok(partStatusTrackingService.getTrackingsByPartState(partState));
-    }
+    // @GetMapping("/by-state/{partState}")
+    // @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
+    // public ResponseEntity<List<PartStatusTracking>> getTrackingsByPartState(
+    //         @PathVariable PartState partState) {
+    //     return ResponseEntity.ok(partStatusTrackingService.getTrackingsByPartState(partState));
+    // }
 
    
 
