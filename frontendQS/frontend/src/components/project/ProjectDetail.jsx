@@ -9,7 +9,6 @@ import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta import
 import PartService from "../../services/PartService";
 import ProjectService from "../../services/ProjectService";
 import QrCodeService from "../../services/QrCodeService";
-import BackButton from "../BackButton";
 import QRPrintTemplate from "./QRPrintTemplate";
 
 // Hook personalizado para manejar la confirmación al salir
@@ -709,9 +708,6 @@ const ProjectDetail = () => {
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6 text-center whitespace-pre-line">
             {error}
           </div>
-          <div className="mt-6 flex justify-center">
-            <BackButton />
-          </div>
         </div>
       </div>
     );
@@ -723,9 +719,6 @@ const ProjectDetail = () => {
         <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
           <div className="bg-blue-100 text-blue-700 p-4 rounded-lg mb-6 text-center">
             No se encontró el proyecto.
-          </div>
-          <div className="mt-6 flex justify-center">
-            <BackButton />
           </div>
         </div>
       </div>

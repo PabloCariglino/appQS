@@ -106,6 +106,16 @@ function Navbar() {
                   Inicio
                 </button>
               </li>
+              {isLoggedIn && role === "OPERATOR" && (
+                <li className="my-1 md:my-0">
+                  <Link
+                    to={`${basePath}/operator-tasks`}
+                    className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                  >
+                    Mis Tareas
+                  </Link>
+                </li>
+              )}
               {isLoggedIn && role === "ADMIN" && (
                 <li className="my-1 md:my-0">
                   <Link
