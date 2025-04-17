@@ -2,10 +2,8 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
+import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
 import CustomPartService from "../../services/CustomPartService";
-import BackButton from "../BackButton";
-import FooterDashboard from "./../FooterDashboard";
-import NavbarDashboard from "./../NavbarDashboard";
 
 const CustomPartList = () => {
   const [customParts, setCustomParts] = useState([]);
@@ -16,10 +14,13 @@ const CustomPartList = () => {
   const [editingPart, setEditingPart] = useState(null);
   const [updatedName, setUpdatedName] = useState("");
   const [updatedImage, setUpdatedImage] = useState(null);
-  const [hasChanges, setHasChanges] = useState(false); // Nuevo estado para rastrear cambios
-  const [showUpdateModal, setShowUpdateModal] = useState(false); // Estado para el modal de actualización
+  const [hasChanges, setHasChanges] = useState(false);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const { role } = useAuthContext(); // Obtener el rol
+
+  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
 
   // Verificar autenticación al cargar el componente
   useEffect(() => {
@@ -155,11 +156,11 @@ const CustomPartList = () => {
       }
 
       setSuccess("Pieza actualizada exitosamente.");
-      setShowUpdateModal(true); // Mostrar el modal de confirmación
+      setShowUpdateModal(true);
       setEditingPart(null);
       setUpdatedName("");
       setUpdatedImage(null);
-      setHasChanges(false); // Reiniciar el estado de cambios
+      setHasChanges(false);
 
       // Ocultar el modal después de 3 segundos
       setTimeout(() => {
@@ -175,7 +176,7 @@ const CustomPartList = () => {
   };
 
   const handleAddCustomPartClick = () => {
-    navigate("/add-custom-part");
+    navigate(`${basePath}/add-custom-part`);
   };
 
   const handleSearchChange = (e) => {
@@ -215,7 +216,6 @@ const CustomPartList = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
         <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
           Lista de Piezas Personalizadas
@@ -373,12 +373,7 @@ const CustomPartList = () => {
             </div>
           </div>
         )}
-
-        <div className="mt-6 flex justify-center">
-          <BackButton />
-        </div>
       </div>
-      <FooterDashboard />
     </div>
   );
 };

@@ -1,43 +1,26 @@
-// Tasks.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import useAuthContext from "../../auth/UseAuthContext";
 import TaskService from "../../services/TaskService";
-import FooterDashboard from "../FooterDashboard";
-import NavbarDashboard from "../NavbarDashboard";
 
 const Tasks = () => {
   const [tasksByState, setTasksByState] = useState([]);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { role } = useAuthContext();
 
   useEffect(() => {
     const fetchTasks = async () => {
       const response = await TaskService.getAllTasksByState();
-      if (response.success) {
-        console.log("Piezas agrupadas por estado recibidas:", response.data);
-        setTasksByState(response.data);
-        setError(null);
-      } else {
-        console.error("Error al cargar las tareas:", response.message);
-        setError(response.message);
-      }
+      if (response.success) setTasksByState(response.data);
+      else setError(response.message);
     };
-
     fetchTasks();
   }, []);
 
-  const handleColumnClick = (state) => {
-    console.log("Estado al hacer clic:", state);
-    if (state) {
-      try {
-        navigate(`/parts/state/${state}`);
-      } catch (err) {
-        console.error("Error al navegar:", err);
-      }
-    } else {
-      console.warn("Estado no válido, no se puede navegar.");
-    }
-  };
+  const basePath = role === "ADMIN" ? "/admin" : "/operator";
+  const handleColumnClick = (state) =>
+    navigate(`${basePath}/parts/state/${state}`);
 
   const columnColors = {
     CONTROL_CALIDAD_EN_FABRICA: "#1a2a44",
@@ -47,87 +30,79 @@ const Tasks = () => {
     EMBALADO: "#5b9eb3",
     INSTALACION_DOMICILIO: "#6cbad1",
     INSTALADO_EXITOSO: "#7ed5ef",
-    FALTANTE: "#dc2626", // Rojo para FALTANTE
-    DEVOLUCION_FUERA_DE_MEDIDA: "#f97316", // Naranja para DEVOLUCION_FUERA_DE_MEDIDA
-    REPINTANDO_POR_GOLPE_O_RAYON: "#eab308", // Amarillo para REPINTANDO_POR_GOLPE_O_RAYON
-    REPARACION: "#ef4444", // Rojo más claro para REPARACION
+    FALTANTE: "#dc2626",
+    DEVOLUCION_FUERA_DE_MEDIDA: "#f97316",
+    REPINTANDO_POR_GOLPE_O_RAYON: "#eab308",
+    REPARACION: "#ef4444",
   };
 
   return (
-    <>
-      <NavbarDashboard />
-      <div className="min-h-screen p-2 sm:p-4">
+    <div className="min-h-screen flex flex-col bg-white">
+      <div className="flex-grow mt-16 px-4 sm:px-6 md:px-8 lg:px-10 py-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center text-gray-800">
           Tareas
         </h1>
         {error && (
-          <div
-            className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4 text-center"
-            role="alert"
-          >
+          <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-center">
             {error}
           </div>
         )}
         <div className="flex flex-wrap gap-2 sm:gap-3">
-          {tasksByState.map((stateGroup, index) => {
-            const columnKey = stateGroup.state;
-            const bgColor = columnColors[columnKey] || "#1a2a44";
-
-            return (
+          {tasksByState.map((stateGroup, index) => (
+            <div
+              key={index}
+              className="flex-1 w-full sm:w-auto min-w-[150px] max-w-[200px] sm:max-w-[220px] lg:max-w-[250px] xl:max-w-[280px] bg-white rounded-lg shadow-sm border border-gray-200"
+            >
               <div
-                key={index}
-                className="flex-1 w-full sm:w-auto min-w-[150px] max-w-[200px] sm:max-w-[220px] lg:max-w-[250px] xl:max-w-[280px] bg-white rounded-lg shadow-sm border border-gray-200"
+                className="text-white flex items-center justify-center min-h-[48px] py-2 rounded-t-lg cursor-pointer hover:brightness-110 transition-colors"
+                style={{
+                  backgroundColor: columnColors[stateGroup.state] || "#1a2a44",
+                }}
+                onClick={() => handleColumnClick(stateGroup.state)}
               >
-                <div
-                  className="text-white flex items-center justify-center min-h-[48px] py-2 rounded-t-lg cursor-pointer hover:brightness-110 transition-colors"
-                  style={{ backgroundColor: bgColor }}
-                  onClick={() => handleColumnClick(stateGroup.state)}
-                >
-                  <div className="flex items-center space-x-2">
-                    <h2 className="text-xs sm:text-sm md:text-base font-semibold uppercase tracking-wide text-center text-wrap">
-                      {stateGroup.state.replace(/_/g, " ")}
-                    </h2>
-                    <span className="bg-gray-200 text-gray-700 text-xs font-medium px-2 py-1 rounded-full">
-                      {stateGroup.parts.length}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-3 max-h-[300px] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                  {stateGroup.parts.length > 0 ? (
-                    <ul className="space-y-3">
-                      {stateGroup.parts.slice(0, 20).map((part) => (
-                        <li
-                          key={part.partId}
-                          className="border-b border-gray-100 pb-3 last:border-b-0 hover:bg-gray-50 transition-colors p-2 rounded-md"
-                        >
-                          <p className="text-gray-800 text-sm">
-                            <span className="font-medium">Proyecto ID:</span>{" "}
-                            {part.projectId || "N/A"}
-                          </p>
-                          <p className="text-gray-800 text-sm">
-                            <span className="font-medium">Pieza ID:</span>{" "}
-                            {part.partId}
-                          </p>
-                          <p className="text-gray-800 text-sm">
-                            <span className="font-medium">Nombre:</span>{" "}
-                            {part.partName}
-                          </p>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-gray-500 text-center text-sm">
-                      No hay piezas en este estado.
-                    </p>
-                  )}
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-xs sm:text-sm md:text-base font-semibold uppercase tracking-wide text-center text-wrap">
+                    {stateGroup.state.replace(/_/g, " ")}
+                  </h2>
+                  <span className="bg-gray-200 text-gray-700 text-xs font-medium px-2 py-1 rounded-full">
+                    {stateGroup.parts.length}
+                  </span>
                 </div>
               </div>
-            );
-          })}
+              <div className="p-3 max-h-[300px] sm:max-h-[400px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                {stateGroup.parts.length > 0 ? (
+                  <ul className="space-y-3">
+                    {stateGroup.parts.slice(0, 20).map((part) => (
+                      <li
+                        key={part.partId}
+                        className="border-b border-gray-100 pb-3 last:border-b-0 hover:bg-gray-50 transition-colors p-2 rounded-md"
+                      >
+                        <p className="text-gray-800 text-sm">
+                          <span className="font-medium">Proyecto ID:</span>{" "}
+                          {part.projectId || "N/A"}
+                        </p>
+                        <p className="text-gray-800 text-sm">
+                          <span className="font-medium">Pieza ID:</span>{" "}
+                          {part.partId}
+                        </p>
+                        <p className="text-gray-800 text-sm">
+                          <span className="font-medium">Nombre:</span>{" "}
+                          {part.partName}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-gray-500 text-center text-sm">
+                    No hay piezas en este estado.
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
-      <FooterDashboard />
-    </>
+    </div>
   );
 };
 

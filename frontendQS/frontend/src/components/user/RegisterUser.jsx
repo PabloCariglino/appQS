@@ -2,12 +2,12 @@ import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
-import BackButton from "../BackButton";
-import FooterDashboard from "./../FooterDashboard";
-import NavbarDashboard from "./../NavbarDashboard";
+import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
 
 const RegisterUser = () => {
   const navigate = useNavigate();
+  const { role } = useAuthContext(); // Obtener el rol del usuario
+  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
   const [formData, setFormData] = useState({
     userName: "",
     email: "",
@@ -46,7 +46,7 @@ const RegisterUser = () => {
       );
       setSuccessMessage("¡Usuario registrado exitosamente!");
       setTimeout(() => {
-        navigate("/user-list");
+        navigate(`${basePath}/user-list`);
       }, 3000);
     } catch (error) {
       console.error("Error al registrar usuario:", error);
@@ -59,7 +59,6 @@ const RegisterUser = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
         <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
           Registrar Usuario
@@ -144,13 +143,7 @@ const RegisterUser = () => {
             </button>
           </form>
         </div>
-
-        {/* Botón Volver centrado */}
-        <div className="mt-6 flex justify-center">
-          <BackButton />
-        </div>
       </div>
-      <FooterDashboard />
     </div>
   );
 };

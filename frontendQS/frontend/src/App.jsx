@@ -9,6 +9,7 @@ import {
 import OperatorDashboard from "./../src/pages/operatorDashboard/page/OperatorDashboard";
 import { getRoleFromToken, isAuthenticated } from "./auth/AuthService";
 import useAuthContext from "./auth/UseAuthContext";
+import Calendar from "./components/calendar/Calendar";
 import AddPartMaterial from "./components/material/AddPartMaterial";
 import PartMaterialList from "./components/material/PartMaterialList";
 import AddCustomPart from "./components/partCustom/AddCustomPart";
@@ -39,7 +40,6 @@ const App = () => {
     if (tokenValid) {
       setIsLoggedIn(true);
       setRole(userRole);
-      // Guardar tiempo de login si no existe
       if (!sessionStorage.getItem("loginTime")) {
         sessionStorage.setItem("loginTime", Date.now());
       }
@@ -48,18 +48,17 @@ const App = () => {
       setRole(null);
     }
 
-    setIsLoading(false); // Marcar como cargado
+    setIsLoading(false);
   }, [setIsLoggedIn, setRole]);
 
-  // Deslogeo automatico
   useEffect(() => {
     const checkTokenExpiration = () => {
       const loginTime = sessionStorage.getItem("loginTime");
       if (loginTime) {
         const elapsed = Date.now() - parseInt(loginTime);
-        console.log("Tiempo transcurrido:", elapsed); // Para depurar
+        console.log("Tiempo transcurrido:", elapsed);
         if (elapsed >= 8 * 60 * 60 * 1000) {
-          console.log("Expiró, redirigiendo..."); // Para depurar
+          console.log("Expiró, redirigiendo...");
           sessionStorage.removeItem("token");
           sessionStorage.removeItem("loginTime");
           setIsLoggedIn(false);
@@ -69,7 +68,7 @@ const App = () => {
       }
     };
 
-    const interval = setInterval(checkTokenExpiration, 55000); // Revisa cada 55 segundos
+    const interval = setInterval(checkTokenExpiration, 55000);
     return () => clearInterval(interval);
   }, [navigate, setIsLoggedIn, setRole]);
 
@@ -102,93 +101,23 @@ const App = () => {
               <Navigate to="/" />
             )
           }
-        />
-        <Route
-          path="/register-user"
-          element={
-            isLoggedIn && role === "ADMIN" ? (
-              <RegisterUser />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route
-          path="/user-list"
-          element={
-            isLoggedIn && role === "ADMIN" ? <UserList /> : <Navigate to="/" />
-          }
-        />
-        <Route
-          path="/material-list"
-          element={
-            isLoggedIn && role === "ADMIN" ? (
-              <PartMaterialList />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route
-          path="/add-part-material"
-          element={
-            isLoggedIn && role === "ADMIN" ? (
-              <AddPartMaterial />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route
-          path="/add-custom-part"
-          element={
-            isLoggedIn && role === "ADMIN" ? (
-              <AddCustomPart />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route
-          path="/PartCustom-list"
-          element={
-            isLoggedIn && role === "ADMIN" ? (
-              <CustomPartList />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route
-          path="/project-list"
-          element={
-            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
-              <ProjectList />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route
-          path="/create-project"
-          element={
-            isLoggedIn && role === "ADMIN" ? (
-              <CreateProject />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route
-          path="/projects/:id"
-          element={
-            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
-              <ProjectDetail />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
+        >
+          <Route index element={<Calendar />} />{" "}
+          {/* Vista inicial para /admin */}
+          <Route path="project-list" element={<ProjectList />} />
+          <Route path="create-project" element={<CreateProject />} />
+          <Route path="projects/:id" element={<ProjectDetail />} />
+          <Route path="add-custom-part" element={<AddCustomPart />} />
+          <Route path="PartCustom-list" element={<CustomPartList />} />
+          <Route path="material-list" element={<PartMaterialList />} />
+          <Route path="add-part-material" element={<AddPartMaterial />} />
+          <Route path="register-user" element={<RegisterUser />} />
+          <Route path="user-list" element={<UserList />} />
+          <Route path="part-scanner" element={<PartScanner />} />
+          <Route path="tasks" element={<Tasks />} />
+          <Route path="parts/state/:state" element={<PartsByState />} />
+          <Route path="operator-tasks" element={<OperatorTasks />} />
+        </Route>
         <Route
           path="/operator"
           element={
@@ -198,48 +127,19 @@ const App = () => {
               <Navigate to="/" />
             )
           }
-        />
+        >
+          <Route index element={<Tasks />} />{" "}
+          {/* Vista inicial para /operator */}
+          <Route path="project-list" element={<ProjectList />} />
+          <Route path="projects/:id" element={<ProjectDetail />} />
+          <Route path="part-scanner" element={<PartScanner />} />
+          <Route path="tasks" element={<Tasks />} />
+          <Route path="parts/state/:state" element={<PartsByState />} />
+          <Route path="operator-tasks" element={<OperatorTasks />} />
+        </Route>
         <Route
-          path="/part-scanner"
-          element={
-            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
-              <PartScanner />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route
-          path="/tasks"
-          element={
-            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
-              <Tasks />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route path="*" element={<Navigate to="/" />} />
-
-        <Route
-          path="/parts/state/:state"
-          element={
-            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
-              <PartsByState />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
-        />
-        <Route
-          path="/operator-tasks"
-          element={
-            isLoggedIn && (role === "ADMIN" || role === "OPERATOR") ? (
-              <OperatorTasks />
-            ) : (
-              <Navigate to="/" />
-            )
-          }
+          path="/contact"
+          element={!isLoggedIn ? <Home /> : <Navigate to="/" />}
         />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>

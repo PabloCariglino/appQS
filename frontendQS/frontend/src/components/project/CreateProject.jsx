@@ -2,12 +2,10 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
+import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
 import CustomPartService from "../../services/CustomPartService";
 import PartMaterialService from "../../services/PartMaterialService";
 import ProjectService from "../../services/ProjectService";
-import BackButton from "../BackButton";
-import FooterDashboard from "./../FooterDashboard";
-import NavbarDashboard from "./../NavbarDashboard";
 
 function CreateProject() {
   const [project, setProject] = useState({
@@ -34,10 +32,13 @@ function CreateProject() {
   const [materialOptions, setMaterialOptions] = useState([]);
   const [error, setError] = useState(null);
   const [selectedPieceImageUrl, setSelectedPieceImageUrl] = useState(null);
-  const [pieceImageUrls, setPieceImageUrls] = useState({}); // Nuevo estado para las imágenes de las piezas agregadas
+  const [pieceImageUrls, setPieceImageUrls] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [newProjectId, setNewProjectId] = useState(null);
   const navigate = useNavigate();
+  const { role } = useAuthContext(); // Obtener el rol
+
+  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -294,7 +295,7 @@ function CreateProject() {
         });
 
         setTimeout(() => {
-          navigate("/project-list");
+          navigate(`${basePath}/project-list`);
         }, 3000);
       } else {
         setError("Error al crear el proyecto");
@@ -307,7 +308,6 @@ function CreateProject() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
         <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
           Crear Proyecto
@@ -614,12 +614,7 @@ function CreateProject() {
             </div>
           </div>
         )}
-
-        <div className="mt-6 flex justify-center">
-          <BackButton />
-        </div>
       </div>
-      <FooterDashboard />
     </div>
   );
 }

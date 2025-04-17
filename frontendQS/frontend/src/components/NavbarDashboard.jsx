@@ -1,5 +1,5 @@
 import { LogOut, User } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { backendLogout } from "../auth/AuthService";
 import useAuthContext from "../auth/UseAuthContext";
@@ -10,6 +10,7 @@ function Navbar() {
   const { isLoggedIn, role, setIsLoggedIn, setRole } = useAuthContext();
   const navigate = useNavigate();
   const location = useLocation();
+  const dropdownRef = useRef(null); // Ref para el dropdown
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -18,6 +19,23 @@ function Navbar() {
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
+
+  // Cerrar el dropdown al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isDropdownOpen]);
 
   const handleLogout = async () => {
     try {
@@ -52,6 +70,10 @@ function Navbar() {
 
   const isHome = location.pathname === "/" && !isLoggedIn;
 
+  // Determinar la base de las rutas según el rol
+  const basePath =
+    role === "ADMIN" ? "/admin" : role === "OPERATOR" ? "/operator" : "";
+
   return (
     <nav
       className={`fixed top-0 w-full z-10 transition-all duration-300 ${
@@ -59,7 +81,7 @@ function Navbar() {
       }`}
     >
       <div className="flex items-center justify-between px-4 py-1 md:px-6">
-        {/* Logo */}
+        {/* Logo (Izquierda) */}
         <div onClick={handleLogoClick} className="cursor-pointer">
           <img
             src="/assets/LOGO-blanco2.jpg"
@@ -68,19 +90,11 @@ function Navbar() {
           />
         </div>
 
-        {/* Menu Toggle (Mobile) */}
-        <div
-          className="md:hidden text-white text-2xl cursor-pointer"
-          onClick={toggleMenu}
-        >
-          ☰
-        </div>
-
-        {/* Navigation Links */}
+        {/* Navigation Links (Centrado en pantallas grandes) */}
         <ul
           className={`${
             isOpen ? "flex" : "hidden"
-          } md:flex flex-col md:flex-row md:items-center md:gap-6 absolute md:static top-8 left-0 right-0 bg-gray-800 md:bg-transparent p-4 md:p-0 z-10`}
+          } md:flex flex-col md:flex-row md:items-center md:gap-6 absolute md:static top-16 left-0 right-0 bg-gray-800 md:bg-transparent p-4 md:p-0 z-10 md:flex-1 md:justify-center md:max-w-3xl md:mx-auto`}
         >
           {isLoggedIn && (role === "ADMIN" || role === "OPERATOR") && (
             <>
@@ -92,10 +106,20 @@ function Navbar() {
                   Inicio
                 </button>
               </li>
+              {isLoggedIn && role === "ADMIN" && (
+                <li className="my-1 md:my-0">
+                  <Link
+                    to={`${basePath}/tasks`}
+                    className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                  >
+                    Tareas
+                  </Link>
+                </li>
+              )}
               {isLoggedIn && (role === "ADMIN" || role === "OPERATOR") && (
                 <li className="my-1 md:my-0">
                   <Link
-                    to="/project-list"
+                    to={`${basePath}/project-list`}
                     className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
                   >
                     Proyectos
@@ -104,7 +128,7 @@ function Navbar() {
               )}
               <li className="my-1 md:my-0">
                 <Link
-                  to="/part-scanner"
+                  to={`${basePath}/part-scanner`}
                   className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
                 >
                   Escanear Piezas
@@ -115,7 +139,7 @@ function Navbar() {
           {isLoggedIn && role === "ADMIN" && (
             <li className="my-1 md:my-0">
               <Link
-                to="/user-list"
+                to="/admin/user-list"
                 className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
               >
                 Usuarios
@@ -133,8 +157,20 @@ function Navbar() {
               </Link>
             </li>
           )}
+        </ul>
+
+        {/* User Icon and Logout Dropdown (Derecha) */}
+        <div className="flex items-center">
+          {/* Menu Toggle (Mobile) */}
+          <div
+            className="md:hidden text-white text-2xl cursor-pointer mr-4"
+            onClick={toggleMenu}
+          >
+            ☰
+          </div>
+
           {isLoggedIn ? (
-            <li className="my-1 md:my-0 relative">
+            <div className="relative" ref={dropdownRef}>
               <button
                 onClick={toggleDropdown}
                 className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex items-center gap-2"
@@ -152,18 +188,16 @@ function Navbar() {
                   </button>
                 </div>
               )}
-            </li>
+            </div>
           ) : (
-            <li className="my-1 md:my-0">
-              <Link
-                to="/login"
-                className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
-              >
-                Login
-              </Link>
-            </li>
+            <Link
+              to="/login"
+              className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+            >
+              Login
+            </Link>
           )}
-        </ul>
+        </div>
       </div>
     </nav>
   );

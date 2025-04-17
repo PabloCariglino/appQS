@@ -1,12 +1,9 @@
-// PartScanner.jsx
 import { BrowserMultiFormatReader } from "@zxing/library";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../../auth/AuthContext";
+import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
 import PartScannerService from "../../services/PartScannerService";
-import FooterDashboard from "../FooterDashboard";
-import NavbarDashboard from "../NavbarDashboard";
 
 // Sonidos para notificaciones
 const successSound = new Audio("/sounds/success.mp3");
@@ -24,7 +21,8 @@ const PartScanner = () => {
   const fileInputRef = useRef(null);
   const imageRef = useRef(null);
   const navigate = useNavigate();
-  const { role } = useContext(AuthContext);
+  const { role } = useAuthContext(); // Obtener el rol del usuario
+  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
 
   // Notificación de prueba al montar el componente
   useEffect(() => {
@@ -292,13 +290,13 @@ const PartScanner = () => {
 
   const handleProjectClick = (projectId) => {
     if (projectId !== "Desconocido") {
-      navigate(`/projects/${projectId}`);
+      navigate(`${basePath}/projects/${projectId}`);
     }
   };
 
   const handlePartClick = (projectId) => {
     if (projectId !== "Desconocido") {
-      navigate(`/projects/${projectId}`);
+      navigate(`${basePath}/projects/${projectId}`);
     }
   };
 
@@ -306,7 +304,6 @@ const PartScanner = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-8 lg:px-10 py-8">
         <h2
           className={`text-center text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 ${
@@ -446,7 +443,6 @@ const PartScanner = () => {
           </div>
         )}
       </div>
-      <FooterDashboard />
       <Toaster position="center" />
     </div>
   );

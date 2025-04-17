@@ -1,11 +1,8 @@
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { AuthContext } from "../../auth/AuthContext";
 import { getAccessToken } from "../../auth/AuthService";
+import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
 import ProjectService from "../../services/ProjectService";
-import BackButton from "../BackButton";
-import FooterDashboard from "./../FooterDashboard";
-import NavbarDashboard from "./../NavbarDashboard";
 
 const ProjectList = () => {
   const [projects, setProjects] = useState([]);
@@ -17,7 +14,7 @@ const ProjectList = () => {
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const navigate = useNavigate();
-  const { role } = useContext(AuthContext);
+  const { role } = useAuthContext(); // Usamos useAuthContext en lugar de AuthContext para consistencia
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -60,14 +57,16 @@ const ProjectList = () => {
     fetchProjects();
   }, []);
 
+  const basePath = role === "ADMIN" ? "/admin" : "/operator";
+
   const handleProjectClick = (id) => {
     console.log(`Redirigiendo al proyecto con ID: ${id}`);
-    navigate(`/projects/${id}`);
+    navigate(`${basePath}/projects/${id}`);
   };
 
-  const handleCreateProject = () => navigate("/create-project");
-  const handlePartCustomList = () => navigate("/PartCustom-list");
-  const handleMaterialList = () => navigate("/material-list");
+  const handleCreateProject = () => navigate(`${basePath}/create-project`);
+  const handlePartCustomList = () => navigate(`${basePath}/PartCustom-list`);
+  const handleMaterialList = () => navigate(`${basePath}/material-list`);
 
   const handleSearchChange = (e) => {
     const value = e.target.value;
@@ -190,7 +189,6 @@ const ProjectList = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
         <h2
           className={`text-center text-3xl md:text-4xl font-bold mb-6 ${
@@ -395,12 +393,6 @@ const ProjectList = () => {
             </table>
           </div>
         </div>
-
-        {isAdmin && (
-          <div className="mt-6 flex justify-center">
-            <BackButton />
-          </div>
-        )}
       </div>
 
       {showModal && (
@@ -427,8 +419,6 @@ const ProjectList = () => {
           </div>
         </div>
       )}
-
-      <FooterDashboard />
     </div>
   );
 };

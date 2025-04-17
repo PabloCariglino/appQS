@@ -2,9 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
-import BackButton from "../BackButton";
-import FooterDashboard from "./../FooterDashboard";
-import NavbarDashboard from "./../NavbarDashboard";
+import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
 
 function UserList() {
   const [users, setUsers] = useState([]);
@@ -14,6 +12,8 @@ function UserList() {
   const [showModal, setShowModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const navigate = useNavigate();
+  const { role } = useAuthContext(); // Obtener el rol del usuario
+  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -47,7 +47,7 @@ function UserList() {
   }, []);
 
   const handleRegisterUserClick = () => {
-    navigate("/register-user");
+    navigate(`${basePath}/register-user`);
   };
 
   const handleChangeUserStatus = async (userID) => {
@@ -150,7 +150,6 @@ function UserList() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
         <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
           Lista de Usuarios
@@ -228,7 +227,7 @@ function UserList() {
                       </td>
                       <td className="p-3 text-center">
                         <button
-                          onClick={() => openDeleteModal(user)}
+                          onClick={() => openauaDeleteModal(user)}
                           className="bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-3 rounded-lg transition-colors duration-300"
                         >
                           Eliminar
@@ -274,13 +273,7 @@ function UserList() {
             </div>
           </div>
         )}
-
-        {/* Botón Volver centrado */}
-        <div className="mt-6 flex justify-center">
-          <BackButton />
-        </div>
       </div>
-      <FooterDashboard />
     </div>
   );
 }

@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import OperatorProfileService from "../../services/OperatorProfileService";
 import PartService from "../../services/PartService";
-import FooterDashboard from "../FooterDashboard";
-import NavbarDashboard from "../NavbarDashboard";
 
 const PartsByState = () => {
   const { state } = useParams();
@@ -60,9 +58,8 @@ const PartsByState = () => {
   };
 
   return (
-    <>
-      <NavbarDashboard />
-      <div className="container mx-auto p-4 sm:p-6 min-h-screen">
+    <div className="min-h-screen flex flex-col bg-white">
+      <div className="flex-grow mt-16 px-4 sm:px-6 md:px-8 lg:px-10 py-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center text-gray-800">
           Piezas en estado {state?.replace(/_/g, " ")}
         </h1>
@@ -117,8 +114,7 @@ const PartsByState = () => {
           </div>
         )}
       </div>
-      <FooterDashboard />
-    </>
+    </div>
   );
 };
 

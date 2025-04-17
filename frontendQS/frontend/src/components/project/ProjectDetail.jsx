@@ -1,18 +1,15 @@
-//ProjectDetail.jsx
 import axios from "axios";
 import { AnimatePresence, motion } from "framer-motion";
-import { useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaPencilAlt, FaPrint, FaSortDown, FaSortUp } from "react-icons/fa";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
-import { AuthContext } from "../../auth/AuthContext";
 import { getAccessToken } from "../../auth/AuthService";
+import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
 import PartService from "../../services/PartService";
 import ProjectService from "../../services/ProjectService";
 import QrCodeService from "../../services/QrCodeService";
 import BackButton from "../BackButton";
-import FooterDashboard from "./../FooterDashboard";
-import NavbarDashboard from "./../NavbarDashboard";
 import QRPrintTemplate from "./QRPrintTemplate";
 
 // Hook personalizado para manejar la confirmación al salir
@@ -52,7 +49,7 @@ const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { role } = useContext(AuthContext); // Obtener el rol del usuario
+  const { role } = useAuthContext(); // Obtener el rol del usuario
   const [project, setProject] = useState(null);
   const [originalProject, setOriginalProject] = useState(null);
   const [error, setError] = useState(null);
@@ -72,6 +69,7 @@ const ProjectDetail = () => {
   const printRef = useRef();
 
   const isAdmin = role === "ADMIN"; // Determinar si el usuario es ADMIN
+  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
 
   // Manejar la impresión con react-to-print
   const handlePrint = useReactToPrint({
@@ -116,7 +114,7 @@ const ProjectDetail = () => {
 
       if (!token) {
         setError("No estás autenticado. Por favor, inicia sesión.");
-        navigate("/login");
+        navigate(`${basePath}/login`);
         return;
       }
 
@@ -142,7 +140,7 @@ const ProjectDetail = () => {
     };
 
     fetchProject();
-  }, [id, navigate]);
+  }, [id, navigate, basePath]);
 
   // Cargar las imágenes QR
   useEffect(() => {
@@ -211,7 +209,7 @@ const ProjectDetail = () => {
       }
 
       if (shouldRedirect) {
-        navigate("/login");
+        navigate(`${basePath}/login`);
       }
     };
 
@@ -228,7 +226,7 @@ const ProjectDetail = () => {
       });
       setQrImageUrls({});
     };
-  }, [project, navigate]);
+  }, [project, navigate, basePath]);
 
   // Cargar las imágenes de las piezas
   useEffect(() => {
@@ -697,11 +695,9 @@ const ProjectDetail = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
-        <NavbarDashboard />
         <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10 text-center text-dashboard-text">
           Cargando...
         </div>
-        <FooterDashboard />
       </div>
     );
   }
@@ -709,7 +705,6 @@ const ProjectDetail = () => {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
-        <NavbarDashboard />
         <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6 text-center whitespace-pre-line">
             {error}
@@ -718,7 +713,6 @@ const ProjectDetail = () => {
             <BackButton />
           </div>
         </div>
-        <FooterDashboard />
       </div>
     );
   }
@@ -726,7 +720,6 @@ const ProjectDetail = () => {
   if (!project) {
     return (
       <div className="min-h-screen flex flex-col bg-white">
-        <NavbarDashboard />
         <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
           <div className="bg-blue-100 text-blue-700 p-4 rounded-lg mb-6 text-center">
             No se encontró el proyecto.
@@ -735,14 +728,12 @@ const ProjectDetail = () => {
             <BackButton />
           </div>
         </div>
-        <FooterDashboard />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
         <h2
           className={`text-center text-3xl md:text-4xl font-bold mb-8 ${
@@ -1630,13 +1621,7 @@ const ProjectDetail = () => {
             </div>
           )}
         </div>
-
-        {/* Botón Volver centrado */}
-        <div className="mt-8 flex justify-center">
-          <BackButton />
-        </div>
       </div>
-      <FooterDashboard />
     </div>
   );
 };

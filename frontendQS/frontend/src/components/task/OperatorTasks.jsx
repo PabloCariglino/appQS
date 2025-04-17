@@ -1,6 +1,4 @@
 import { useEffect, useState } from "react";
-import FooterDashboard from "../../components/FooterDashboard";
-import NavbarDashboard from "../../components/NavbarDashboard";
 import OperatorProfileService from "../../services/OperatorProfileService";
 
 const OperatorTasks = () => {
@@ -44,9 +42,8 @@ const OperatorTasks = () => {
   };
 
   return (
-    <>
-      <NavbarDashboard />
-      <div className="container mx-auto p-4 sm:p-6 min-h-screen">
+    <div className="min-h-screen flex flex-col bg-white">
+      <div className="flex-grow mt-16 px-4 sm:px-6 md:px-8 lg:px-10 py-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center text-gray-800">
           Mis Tareas
         </h1>
@@ -138,8 +135,7 @@ const OperatorTasks = () => {
           </div>
         </div>
       </div>
-      <FooterDashboard />
-    </>
+    </div>
   );
 };
 

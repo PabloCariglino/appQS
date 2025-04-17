@@ -1,10 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
+import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
 import CustomPartService from "../../services/CustomPartService";
-import BackButton from "../BackButton";
-import FooterDashboard from "./../FooterDashboard";
-import NavbarDashboard from "./../NavbarDashboard";
 
 const AddCustomPart = () => {
   const [customPartName, setCustomPartName] = useState("");
@@ -12,6 +10,9 @@ const AddCustomPart = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { role } = useAuthContext(); // Obtener el rol
+
+  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
 
   // Verificar autenticación al cargar el componente
   useEffect(() => {
@@ -35,7 +36,7 @@ const AddCustomPart = () => {
       setError("");
       setCustomPartName("");
       setImageFile(null);
-      navigate("/partCustom-list");
+      navigate(`${basePath}/partCustom-list`);
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -47,7 +48,6 @@ const AddCustomPart = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
         <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
           Agregar Nueva Pieza Personalizada
@@ -104,12 +104,7 @@ const AddCustomPart = () => {
             </button>
           </form>
         </div>
-
-        <div className="mt-6 flex justify-center">
-          <BackButton />
-        </div>
       </div>
-      <FooterDashboard />
     </div>
   );
 };

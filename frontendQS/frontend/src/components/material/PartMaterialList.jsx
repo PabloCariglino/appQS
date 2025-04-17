@@ -2,9 +2,7 @@ import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
-import BackButton from "../BackButton";
-import FooterDashboard from "./../FooterDashboard";
-import NavbarDashboard from "./../NavbarDashboard";
+import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
 
 const PartMaterialList = () => {
   const [materials, setMaterials] = useState([]);
@@ -17,6 +15,9 @@ const PartMaterialList = () => {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  const { role } = useAuthContext(); // Obtener el rol
+
+  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
 
   useEffect(() => {
     const fetchMaterials = async () => {
@@ -130,7 +131,7 @@ const PartMaterialList = () => {
   };
 
   const handleAddMaterialClick = () => {
-    navigate("/add-part-material");
+    navigate(`${basePath}/add-part-material`);
   };
 
   const handleSearchChange = (e) => {
@@ -164,7 +165,6 @@ const PartMaterialList = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <NavbarDashboard />
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
         <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
           Lista de Materiales
@@ -297,12 +297,7 @@ const PartMaterialList = () => {
             </div>
           </div>
         )}
-
-        <div className="mt-6 flex justify-center">
-          <BackButton />
-        </div>
       </div>
-      <FooterDashboard />
     </div>
   );
 };
