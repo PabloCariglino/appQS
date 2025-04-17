@@ -56,15 +56,6 @@ public class PartStatusTrackingController {
         return ResponseEntity.ok(partStatusTrackingService.manualTransition(partId, operatorId, newState, description));
     }
 
-    // @GetMapping("/by-state/{partState}")
-    // @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
-    // public ResponseEntity<List<PartStatusTracking>> getTrackingsByPartState(
-    //         @PathVariable PartState partState) {
-    //     return ResponseEntity.ok(partStatusTrackingService.getTrackingsByPartState(partState));
-    // }
-
-   
-
     @GetMapping("/by-project/{projectId}")
     @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
     public ResponseEntity<List<PartStatusTracking>> getTrackingsByProject(
@@ -96,8 +87,8 @@ public class PartStatusTrackingController {
     @PostMapping("/mark-ready")
     @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
     public ResponseEntity<Void> markAsReadyForDelivery(@RequestBody String qrData) {
-    partStatusTrackingService.markAsReadyForDelivery(qrData);
-    return ResponseEntity.ok().build();
+        partStatusTrackingService.markAsReadyForDelivery(qrData);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/{trackingId}")
@@ -107,14 +98,6 @@ public class PartStatusTrackingController {
         partStatusTrackingService.deleteTracking(trackingId);
         return ResponseEntity.noContent().build();
     }
-
-  
-
-    // @GetMapping("/observed")
-    // public ResponseEntity<List<PartStatusTracking>> getObservedParts() {
-    //     List<PartStatusTracking> observedParts = partStatusTrackingService.getObservedParts();
-    //     return ResponseEntity.ok(observedParts);
-    // }
 
     @GetMapping("/observed")
     @PreAuthorize("hasAnyRole('OPERATOR', 'ADMIN')")
@@ -148,6 +131,4 @@ public class PartStatusTrackingController {
         List<StatePartsDTO> stateParts = partStatusTrackingService.getAllPartsByState();
         return ResponseEntity.ok(stateParts);
     }
-
-   
 }

@@ -17,6 +17,9 @@ import lombok.Setter;
 @Setter
 public class UserDto {
 
+
+    private Long userID;
+
     @NotEmpty(message = "El nombre de usuario no debe estar vacío")
     @Size(min = 3, max = 20, message = "El nombre de usuario debe tener entre 3 y 20 caracteres")
     private String userName;

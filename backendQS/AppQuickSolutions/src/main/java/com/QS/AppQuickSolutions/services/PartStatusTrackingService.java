@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -34,7 +35,6 @@ public class PartStatusTrackingService {
     private final UserRepository userRepository;
     private final QRCodeService qrCodeService;
 
-    // Lista única de todos los estados
     private static final PartState[] ALL_STATES = {
         PartState.CONTROL_CALIDAD_EN_FABRICA,
         PartState.SOLDADO_FLAPEADO,
@@ -60,7 +60,6 @@ public class PartStatusTrackingService {
         this.qrCodeService = qrCodeService;
     }
 
-    // Método para calcular y formatear la duración en días, horas y minutos
     public String formatDuration(Long minutes) {
         if (minutes == null) return "0 días, 0 horas, 0 minutos";
         long days = minutes / (24 * 60);
@@ -70,12 +69,10 @@ public class PartStatusTrackingService {
         return String.format("%d días, %d horas, %d minutos", days, hours, minutes);
     }
 
-    // Crear un nuevo seguimiento (cuando un operario toma una pieza)
     public PartStatusTracking startTracking(UUID partId, Long operatorId) {
         Part part = partRepository.findById(partId).orElseThrow();
         User operator = userRepository.findById(operatorId).orElseThrow();
     
-        // Verificar si el operario tiene una pieza en proceso
         List<PartStatusTracking> activeTrackings = partStatusTrackingRepository
                 .findByUserOperatorAndIsCompletedFalse(operator);
         if (!activeTrackings.isEmpty()) {
@@ -97,14 +94,16 @@ public class PartStatusTrackingService {
         return partStatusTrackingRepository.save(tracking);
     }
 
-    // Completar un seguimiento (cuando un operario finaliza una tarea)
     public PartStatusTracking completeTracking(UUID partId, Long operatorId) throws java.io.IOException {
-        Part part = partRepository.findById(partId).orElseThrow();
-        User operator = userRepository.findById(operatorId).orElseThrow();
+        Part part = partRepository.findById(partId).orElseThrow(() -> new RuntimeException("Pieza no encontrada"));
+        User operator = userRepository.findById(operatorId).orElseThrow(() -> new RuntimeException("Operario no encontrado"));
     
-        PartStatusTracking tracking = partStatusTrackingRepository
-                .findByPartAndUserOperatorAndIsCompletedFalse(part, operator)
-                .orElseThrow();
+        Optional<PartStatusTracking> trackingOpt = partStatusTrackingRepository
+                .findByPartAndUserOperatorAndIsCompletedFalse(part, operator);
+        if (trackingOpt.isEmpty()) {
+            throw new RuntimeException("No se encontró una tarea activa para esta pieza y operario.");
+        }
+        PartStatusTracking tracking = trackingOpt.get();
     
         tracking.setEndTime(LocalDateTime.now());
         tracking.setCompleted(true);
@@ -116,7 +115,6 @@ public class PartStatusTrackingService {
         tracking.setPartState(nextState);
         part.setPartState(nextState);
     
-        // Generar QR si pasa a EMBALADO
         if (nextState == PartState.EMBALADO) {
             generateQrForEmbalado(tracking);
         }
@@ -127,44 +125,37 @@ public class PartStatusTrackingService {
         return tracking;
     }
 
-    // Obtener un seguimiento por ID
     public PartStatusTracking getTrackingById(Long trackingId) {
         return partStatusTrackingRepository.findById(trackingId)
                 .orElseThrow(() -> new RuntimeException("Seguimiento no encontrado"));
     }
 
-    // Listar todos los seguimientos
     public List<PartStatusTracking> getAllTrackings() {
         return partStatusTrackingRepository.findAll();
     }
 
-    // Listar seguimientos por operario (historial completo de tareas completadas)
     public List<PartStatusTracking> getTrackingsByOperator(Long operatorId) {
         User operator = userRepository.findById(operatorId)
                 .orElseThrow(() -> new RuntimeException("Operario no encontrado"));
-        return partStatusTrackingRepository.findByUserOperatorAndIsCompletedTrue(operator);
+        return partStatusTrackingRepository.findByUserOperator(operator); // Devolver todas las tareas
     }
 
-    // Listar seguimientos por pieza
     public List<PartStatusTracking> getTrackingsByPart(UUID partId) {
         Part part = partRepository.findById(partId)
                 .orElseThrow(() -> new RuntimeException("Pieza no encontrada"));
         return partStatusTrackingRepository.findByPart(part);
     }
 
-    // Listar seguimientos por proyecto (usando el projectId desde Part)
     public List<PartStatusTracking> getTrackingsByProject(Long projectId) {
         return partStatusTrackingRepository.findAll().stream()
                 .filter(tracking -> tracking.getPart().getProject().getId().equals(projectId))
                 .collect(Collectors.toList());
     }
 
-    // Listar piezas por categoría (PartState)
     public List<PartStatusTracking> getTrackingsByPartState(PartState partState) {
         return partStatusTrackingRepository.findByPartStateAndIsCompletedFalse(partState);
     }
 
-    // Eliminar un seguimiento
     public void deleteTracking(Long trackingId) {
         PartStatusTracking tracking = getTrackingById(trackingId);
         partStatusTrackingRepository.delete(tracking);
@@ -201,11 +192,10 @@ public class PartStatusTrackingService {
         }
     }
 
-    // Método auxiliar para avanzar entre estados (respetando reglas de PartState)
     private PartState getNextState(PartState currentState, LocalDateTime endTime, PartStatusTracking tracking) {
         switch (currentState) {
             case CONTROL_CALIDAD_EN_FABRICA:
-                return PartState.SOLDADO_FLAPEADO; // Por defecto, pero se puede cambiar manualmente
+                return PartState.SOLDADO_FLAPEADO;
             case SOLDADO_FLAPEADO:
                 return PartState.FOFATIZADO_LIJADO;
             case FOFATIZADO_LIJADO:
@@ -215,7 +205,7 @@ public class PartStatusTrackingService {
                 if (hoursSinceEnd >= 12) {
                     return PartState.EMBALADO;
                 }
-                return PartState.EMBALADO; // Pasa a EMBALADO pero no seleccionable hasta 12 horas
+                return PartState.EMBALADO;
             case EMBALADO:
                 return PartState.INSTALACION_DOMICILIO;
             case INSTALACION_DOMICILIO:
@@ -225,7 +215,6 @@ public class PartStatusTrackingService {
         }
     }
     
-    // Método para transiciones manuales con descripción
     public PartStatusTracking manualTransition(UUID partId, Long operatorId, PartState newState, String description) {
         Part part = partRepository.findById(partId).orElseThrow();
         User operator = userRepository.findById(operatorId).orElseThrow();
@@ -252,12 +241,10 @@ public class PartStatusTrackingService {
         User operator = userRepository.findById(operatorId).orElseThrow();
         List<PartStatusTracking> trackings = partStatusTrackingRepository.findByUserOperatorAndIsCompletedTrue(operator);
     
-        // Piezas del último año
         List<PartStatusTracking> lastYearTrackings = trackings.stream()
                 .filter(t -> t.getEndTime().isAfter(LocalDateTime.now().minusYears(1)))
                 .collect(Collectors.toList());
     
-        // Promedio por categoría
         Map<PartState, Double> avgDurationByCategory = lastYearTrackings.stream()
                 .collect(Collectors.groupingBy(
                         PartStatusTracking::getPartState,

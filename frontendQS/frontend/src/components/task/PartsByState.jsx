@@ -8,6 +8,8 @@ const PartsByState = () => {
   const [parts, setParts] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false); // State for modal visibility
+  const [modalMessage, setModalMessage] = useState(""); // State for modal message
 
   useEffect(() => {
     const fetchParts = async () => {
@@ -44,6 +46,21 @@ const PartsByState = () => {
   }, [state]);
 
   const handleTakeTask = async (partId) => {
+    const tasksResponse = await OperatorProfileService.getOperatorTasks();
+    if (!tasksResponse.success) {
+      setModalMessage(tasksResponse.message);
+      setShowModal(true);
+      return;
+    }
+
+    if (tasksResponse.data.currentTasks?.length > 0) {
+      setModalMessage(
+        "Usted ya tiene una pieza en proceso de producción. Finalice la tarea actual antes de tomar otra."
+      );
+      setShowModal(true);
+      return;
+    }
+
     const confirm = window.confirm(
       "¿Seguro que desea tomar esta pieza para su producción?"
     );
@@ -51,10 +68,17 @@ const PartsByState = () => {
       const response = await OperatorProfileService.assignPart(partId);
       if (response.success) {
         setParts(parts.filter((part) => part.partId !== partId));
+        setError(null);
       } else {
-        setError(response.message);
+        setModalMessage(response.message);
+        setShowModal(true);
       }
     }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setModalMessage("");
   };
 
   return (
@@ -63,6 +87,25 @@ const PartsByState = () => {
         <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center text-gray-800">
           Piezas en estado {state?.replace(/_/g, " ")}
         </h1>
+
+        {/* Modal */}
+        {showModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                Advertencia
+              </h2>
+              <p className="text-gray-600 mb-4">{modalMessage}</p>
+              <button
+                onClick={closeModal}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 w-full"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <p className="text-gray-500 text-center text-sm">
             Cargando piezas...

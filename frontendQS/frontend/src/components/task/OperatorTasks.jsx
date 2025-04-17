@@ -5,16 +5,24 @@ const OperatorTasks = () => {
   const [currentTasks, setCurrentTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTasks = async () => {
-      const response = await OperatorProfileService.getOperatorTasks();
-      if (response.success) {
-        setCurrentTasks(response.data.currentTasks || []);
-        setCompletedTasks(response.data.completedTasks || []);
-        setError(null);
-      } else {
-        setError(response.message);
+      setLoading(true);
+      try {
+        const response = await OperatorProfileService.getOperatorTasks();
+        if (response.success) {
+          setCurrentTasks(response.data.currentTasks || []);
+          setCompletedTasks(response.data.completedTasks || []);
+          setError(null);
+        } else {
+          setError(response.message || "Error al cargar las tareas.");
+        }
+      } catch (err) {
+        setError("Error al obtener las tareas. Por favor, intenta de nuevo.");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -22,23 +30,17 @@ const OperatorTasks = () => {
   }, []);
 
   const handleCompleteTask = async (trackingId) => {
-    const response = await OperatorProfileService.completeTask(trackingId);
-    if (response.success) {
-      setCurrentTasks(currentTasks.filter((task) => task.id !== trackingId));
-      setCompletedTasks([...completedTasks, response.data]);
-    } else {
-      setError(response.message);
+    const confirm = window.confirm("¿Seguro que desea finalizar esta tarea?");
+    if (confirm) {
+      const response = await OperatorProfileService.completeTask(trackingId);
+      if (response.success) {
+        setCurrentTasks(currentTasks.filter((task) => task.id !== trackingId));
+        setCompletedTasks([...completedTasks, response.data]);
+        setError(null);
+      } else {
+        setError(response.message || "Error al completar la tarea.");
+      }
     }
-  };
-
-  const calculateDuration = (startTime, endTime) => {
-    if (!startTime || !endTime) return "N/A";
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const diffMs = end - start;
-    const hours = Math.floor(diffMs / 3600000);
-    const minutes = Math.floor((diffMs % 3600000) / 60000);
-    return `${hours}h ${minutes}m`;
   };
 
   return (
@@ -47,93 +49,99 @@ const OperatorTasks = () => {
         <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center text-gray-800">
           Mis Tareas
         </h1>
-        {error && (
+
+        {loading ? (
+          <p className="text-gray-500 text-center text-sm">
+            Cargando tareas...
+          </p>
+        ) : error ? (
           <div
             className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-center"
             role="alert"
           >
             {error}
           </div>
-        )}
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* Piezas actuales */}
-          <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-xl font-semibold mb-4">Piezas en proceso</h2>
-            {currentTasks.length > 0 ? (
-              <ul className="space-y-3">
-                {currentTasks.map((task) => (
-                  <li
+        ) : (
+          <>
+            {/* Tareas en Proceso */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-4 text-gray-700">
+                Pieza en proceso
+              </h2>
+              {currentTasks.length > 0 ? (
+                currentTasks.map((task) => (
+                  <div
                     key={task.id}
-                    className="border-b border-gray-100 pb-3 last:border-b-0 flex justify-between items-center"
+                    className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-4"
                   >
-                    <div>
-                      <p className="text-gray-800 text-sm">
-                        <span className="font-medium">Pieza ID:</span>{" "}
-                        {task.part.partId}
-                      </p>
-                      <p className="text-gray-800 text-sm">
-                        <span className="font-medium">Nombre:</span>{" "}
-                        {task.part.partName}
-                      </p>
-                      <p className="text-gray-800 text-sm">
-                        <span className="font-medium">Estado:</span>{" "}
-                        {task.partState.replace(/_/g, " ")}
-                      </p>
-                    </div>
+                    <p className="text-gray-800 text-sm">
+                      <span className="font-medium">Proyecto ID:</span>{" "}
+                      {task.part?.project?.id || "N/A"}
+                    </p>
+                    <p className="text-gray-800 text-sm">
+                      <span className="font-medium">Pieza ID:</span>{" "}
+                      {task.part?.id || "N/A"}
+                    </p>
+                    <p className="text-gray-800 text-sm">
+                      <span className="font-medium">Nombre:</span>{" "}
+                      {task.part?.customPart?.customPartName || "Sin nombre"}
+                    </p>
                     <button
                       onClick={() => handleCompleteTask(task.id)}
-                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                      className="mt-3 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
                     >
                       Finalizar proceso
                     </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500 text-center text-sm">
-                No hay piezas en proceso.
-              </p>
-            )}
-          </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No tienes piezas en proceso.
+                </p>
+              )}
+            </div>
 
-          {/* Piezas completadas en el año */}
-          <div className="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <h2 className="text-xl font-semibold mb-4">
-              Piezas completadas en 2025
-            </h2>
-            {completedTasks.length > 0 ? (
-              <ul className="space-y-3">
-                {completedTasks
-                  .filter(
-                    (task) => new Date(task.endTime).getFullYear() === 2025
-                  )
-                  .map((task) => (
+            {/* Tareas Completadas */}
+            <div>
+              <h2 className="text-xl font-semibold mb-4 text-gray-700">
+                Tareas Completadas
+              </h2>
+              {completedTasks.length > 0 ? (
+                <ul className="space-y-3">
+                  {completedTasks.map((task) => (
                     <li
                       key={task.id}
-                      className="border-b border-gray-100 pb-3 last:border-b-0"
+                      className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
                     >
                       <p className="text-gray-800 text-sm">
+                        <span className="font-medium">Proyecto ID:</span>{" "}
+                        {task.part?.project?.id || "N/A"}
+                      </p>
+                      <p className="text-gray-800 text-sm">
                         <span className="font-medium">Pieza ID:</span>{" "}
-                        {task.part.partId}
+                        {task.part?.id || "N/A"}
                       </p>
                       <p className="text-gray-800 text-sm">
                         <span className="font-medium">Nombre:</span>{" "}
-                        {task.part.partName}
+                        {task.part?.customPart?.customPartName || "Sin nombre"}
                       </p>
                       <p className="text-gray-800 text-sm">
                         <span className="font-medium">Duración:</span>{" "}
-                        {calculateDuration(task.startTime, task.endTime)}
+                        {task.taskDuration
+                          ? `${task.taskDuration} minutos`
+                          : "N/A"}
                       </p>
                     </li>
                   ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500 text-center text-sm">
-                No hay piezas completadas este año.
-              </p>
-            )}
-          </div>
-        </div>
+                </ul>
+              ) : (
+                <p className="text-gray-500 text-sm">
+                  No tienes tareas completadas.
+                </p>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,9 @@
 package com.QS.AppQuickSolutions.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -9,6 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.QS.AppQuickSolutions.dto.LoginRequest;
 import com.QS.AppQuickSolutions.dto.LoginResponse;
 import com.QS.AppQuickSolutions.dto.RefreshTokenRequest;
+import com.QS.AppQuickSolutions.dto.UserDto;
+import com.QS.AppQuickSolutions.entity.User;
+import com.QS.AppQuickSolutions.repository.UserRepository;
 import com.QS.AppQuickSolutions.security.AuthService;
 import com.QS.AppQuickSolutions.security.jwt.JwtTokenProvider;
 
@@ -20,6 +26,9 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtTokenProvider jwtTokenProvider;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public AuthController(AuthService authService, JwtTokenProvider jwtTokenProvider) {
         this.authService = authService;
@@ -72,7 +81,21 @@ public class AuthController {
         System.out.println("No se encontró un token válido para desloguear.");
         return ResponseEntity.status(400).body("Token inválido o inexistente.");
     }
-}
-
+    }
+ 
+    @GetMapping("/current-user")
+    public ResponseEntity<UserDto> getCurrentUser(Authentication authentication) {
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        UserDto userDto = new UserDto();
+        userDto.setUserID(user.getUserID());
+        userDto.setUserName(user.getUserName());
+        userDto.setEmail(user.getEmail());
+        userDto.setPassword(user.getPassword());
+        userDto.setUserStatus(user.getUserStatus());
+        userDto.setRole(user.getRole());
+        return ResponseEntity.ok(userDto);
+    }
 
 }

@@ -32,4 +32,6 @@ public interface PartStatusTrackingRepository extends JpaRepository<PartStatusTr
     Optional<PartStatusTracking> findByPartAndIsCompletedFalse(Part part);
 
     // List<PartStatusTracking> findByIsObservedTrue();
+
+    List<PartStatusTracking> findByUserOperator(User operator);
 }

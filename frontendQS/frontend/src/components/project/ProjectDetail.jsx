@@ -1337,7 +1337,7 @@ const ProjectDetail = () => {
                       <td className="p-3 text-center text-dashboard-text">
                         {part.scanDateTime
                           ? formatDateTimeWithoutSeconds(part.scanDateTime)
-                          : "N/A"}
+                          : "Sin Recepcion"}
                       </td>
                       <td className="p-3 text-center text-dashboard-text">
                         <div className="flex items-center justify-center space-x-2">
