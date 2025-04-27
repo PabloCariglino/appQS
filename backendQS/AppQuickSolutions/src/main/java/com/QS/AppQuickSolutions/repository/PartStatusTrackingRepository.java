@@ -2,6 +2,7 @@ package com.QS.AppQuickSolutions.repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -9,29 +10,25 @@ import org.springframework.stereotype.Repository;
 import com.QS.AppQuickSolutions.entity.Part;
 import com.QS.AppQuickSolutions.entity.PartStatusTracking;
 import com.QS.AppQuickSolutions.entity.User;
-import com.QS.AppQuickSolutions.enums.PartState;
 
 @Repository
 public interface PartStatusTrackingRepository extends JpaRepository<PartStatusTracking, Long> {
 
-    // Buscar un seguimiento activo (no completado) por pieza y operario
-    Optional<PartStatusTracking> findByPartAndUserOperatorAndIsCompletedFalse(Part part, User userOperator);
+    Optional<PartStatusTracking> findByPartIdAndUserOperatorAndIsCompletedFalse(UUID partId, User user);
 
-    // Buscar todos los seguimientos completados por operario (historial)
-    List<PartStatusTracking> findByUserOperatorAndIsCompletedTrue(User userOperator);
-                 
-    // buscar si el operario tiene una pieza en proceso
-    List<PartStatusTracking> findByUserOperatorAndIsCompletedFalse(User userOperator);
+    List<PartStatusTracking> findByUserOperatorAndIsCompletedFalse(User user);
 
-    // Buscar todos los seguimientos de una pieza específica
-    List<PartStatusTracking> findByPart(Part part);
+    List<PartStatusTracking> findByUserOperatorAndIsCompletedTrue(User user);
 
-    // Buscar piezas por categoría (PartState) que no estén completadas
-    List<PartStatusTracking> findByPartStateAndIsCompletedFalse(PartState partState);
+    List<PartStatusTracking> findTop15ByUserOperatorAndIsCompletedTrueOrderByEndTimeDesc(User user);
+
+    List<PartStatusTracking> findByUserOperatorUserID(Long userOperatorUserID);
+
+    List<PartStatusTracking> findByUserOperatorUserIDAndIsCompletedFalse(Long userOperatorUserID);
 
     Optional<PartStatusTracking> findByPartAndIsCompletedFalse(Part part);
 
-    // List<PartStatusTracking> findByIsObservedTrue();
+    Optional<PartStatusTracking> findByPartIdAndUserOperatorUserIDAndIsCompletedFalse(UUID partId, Long userOperatorUserID);
 
-    List<PartStatusTracking> findByUserOperator(User operator);
+    List<PartStatusTracking> findByUserOperatorUserIDAndIsCompletedTrue(Long userOperatorUserID);
 }

@@ -1,5 +1,8 @@
 package com.QS.AppQuickSolutions.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum PartState {
 
     DESARROLLO, 
@@ -15,4 +18,14 @@ public enum PartState {
     DEVOLUCION_FUERA_DE_MEDIDA, //la pieza que envio el plegador o el productor, esta fuera de medida
     REPINTANDO_POR_GOLPE_O_RAYON, //hay que volver a pintar la pieza- este estado tiene que estar la opcion para pasarse manualmente a partir del pintado en adelante
     REPARACION; //hay que reparar- este estado tiene que estar la opcion para pasarse manualmente a partir del CONTROL_CALIDAD
+
+    @JsonValue
+    public String getValue() {
+        return this.name();
+    }
+
+    @JsonCreator
+    public static PartState fromValue(String value) {
+        return PartState.valueOf(value.toUpperCase());
+    }
 }

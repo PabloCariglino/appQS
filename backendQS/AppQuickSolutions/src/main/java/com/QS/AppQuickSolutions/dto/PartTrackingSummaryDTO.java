@@ -16,10 +16,15 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-public class PartSummaryDTO {
+public class PartTrackingSummaryDTO {
     private UUID partId;
     private Long projectId;
     private String partName;
     private PartState partState;
     private LocalDateTime scanDateTime;
+
+    private Long trackingId;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime; 
+    private boolean completed;
 }

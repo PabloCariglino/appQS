@@ -3,8 +3,11 @@ package com.QS.AppQuickSolutions.dto;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotEmpty;
 
+import com.QS.AppQuickSolutions.enums.PartState;
 import com.QS.AppQuickSolutions.enums.Role;
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -36,4 +39,7 @@ public class UserDto {
 
     @NotEmpty(message = "El rol no debe estar vacío")
     private Role role;
+
+    @Enumerated(EnumType.STRING)
+    private PartState preferredCategory;
 }

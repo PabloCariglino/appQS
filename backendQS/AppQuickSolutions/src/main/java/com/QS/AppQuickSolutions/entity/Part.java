@@ -13,7 +13,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -26,6 +28,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
+@Table(indexes = {@Index(name = "idx_part_state", columnList = "part_state")})
 public class Part {
 
     @Id

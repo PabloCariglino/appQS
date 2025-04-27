@@ -11,8 +11,10 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -25,6 +27,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Getter
 @Setter
+@Table(indexes = {@Index(name = "idx_user_part_completed", columnList = "operator_id, part_id, is_completed")})
 public class PartStatusTracking {
     
     @Id
@@ -43,6 +46,10 @@ public class PartStatusTracking {
     @Column(nullable = false)
     private PartState partState;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "initial_part_state")
+    private PartState initialPartState;
+
     private LocalDateTime startTime; //fecha y hora de inicio de proceso
     private LocalDateTime endTime;  //fecha y hora de fin de proceso
 
@@ -51,9 +58,7 @@ public class PartStatusTracking {
 
     private boolean isCompleted = false; //estado para saber si en la píeza se completo o no su trabajo
 
-    // @Column
-    // private boolean isReadyForDelivery = false; 
-    // Para INSTALACION_DOMICILIO
+  
 
     @Column
     private String description; // Para describir problemas (REPARACION, DEVOLUCION_FUERA_DE_MEDIDA, etc.)

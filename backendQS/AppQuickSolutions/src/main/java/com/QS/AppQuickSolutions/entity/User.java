@@ -3,6 +3,7 @@ package com.QS.AppQuickSolutions.entity;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import com.QS.AppQuickSolutions.enums.PartState;
 import com.QS.AppQuickSolutions.enums.Role;
 
 import jakarta.persistence.Column;
@@ -43,6 +44,9 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @Enumerated(EnumType.STRING)
+    private PartState preferredCategory;
 
     public GrantedAuthority toGrantedAuthority() {
         return new SimpleGrantedAuthority("ROLE_" + this.role.name());

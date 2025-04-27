@@ -1,78 +1,85 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import OperatorProfileService from "../../services/OperatorProfileService";
-import PartService from "../../services/PartService";
+import PartStateGroupService from "../../services/PartStateGroupService";
+import PartTrackingService from "../../services/PartTrackingService";
 
 const PartsByState = () => {
   const { state } = useParams();
   const [parts, setParts] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false); // State for modal visibility
-  const [modalMessage, setModalMessage] = useState(""); // State for modal message
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+
+  const fetchParts = async () => {
+    setLoading(true);
+    try {
+      const response = await PartStateGroupService.getAllPartsByState();
+      if (response.success) {
+        const stateGroup = response.data.find((group) => group.state === state);
+        const partsData = stateGroup ? stateGroup.parts : [];
+        setParts(partsData);
+        if (partsData.length === 0) {
+          setError(
+            `No se encontraron piezas en el estado ${state.replace(/_/g, " ")}.`
+          );
+        } else {
+          setError(null);
+        }
+      } else {
+        setError(response.message || "Error al cargar las piezas.");
+      }
+    } catch (err) {
+      setError("Error al obtener las piezas. Por favor, intenta de nuevo.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchParts = async () => {
-      setLoading(true);
-      console.log("Fetching parts for state:", state);
-      try {
-        const response = await PartService.getPartsByState(state);
-        console.log("Response in PartsByState:", response);
-        if (response.success) {
-          const partsData = Array.isArray(response.data) ? response.data : [];
-          console.log("Parts data:", partsData);
-          setParts(partsData);
-          if (partsData.length === 0) {
-            setError(
-              `No se encontraron piezas en el estado ${state.replace(
-                /_/g,
-                " "
-              )}.`
-            );
-          } else {
-            setError(null);
-          }
-        } else {
-          setError(response.message || "Error al cargar las piezas.");
-        }
-      } catch (err) {
-        setError("Error al obtener las piezas. Por favor, intenta de nuevo.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchParts();
   }, [state]);
 
-  const handleTakeTask = async (partId) => {
-    const tasksResponse = await OperatorProfileService.getOperatorTasks();
-    if (!tasksResponse.success) {
-      setModalMessage(tasksResponse.message);
-      setShowModal(true);
-      return;
-    }
+  const handleTakePart = async (partId) => {
+    try {
+      // Verificar si el usuario tiene tareas activas
+      const activeTasksResponse = await PartTrackingService.getActiveTasks();
+      if (!activeTasksResponse.success) {
+        setModalMessage(activeTasksResponse.message);
+        setShowModal(true);
+        return;
+      }
 
-    if (tasksResponse.data.currentTasks?.length > 0) {
+      const activeTasks = activeTasksResponse.data || [];
+      if (activeTasks.length > 0) {
+        setModalMessage(
+          "Usted ya tiene una pieza en proceso de producción. Finalice la tarea actual antes de tomar otra."
+        );
+        setShowModal(true);
+        return;
+      }
+
+      const confirm = window.confirm(
+        "¿Seguro que desea tomar esta pieza para su producción?"
+      );
+      if (confirm) {
+        const response = await PartTrackingService.takePart(partId);
+        if (response.success) {
+          await fetchParts();
+          setError(null);
+        } else {
+          setModalMessage(
+            response.message ||
+              "Error al tomar la pieza. Por favor, intenta de nuevo."
+          );
+          setShowModal(true);
+        }
+      }
+    } catch (err) {
       setModalMessage(
-        "Usted ya tiene una pieza en proceso de producción. Finalice la tarea actual antes de tomar otra."
+        err.message || "Error al tomar la pieza. Por favor, intenta de nuevo."
       );
       setShowModal(true);
-      return;
-    }
-
-    const confirm = window.confirm(
-      "¿Seguro que desea tomar esta pieza para su producción?"
-    );
-    if (confirm) {
-      const response = await OperatorProfileService.assignPart(partId);
-      if (response.success) {
-        setParts(parts.filter((part) => part.partId !== partId));
-        setError(null);
-      } else {
-        setModalMessage(response.message);
-        setShowModal(true);
-      }
     }
   };
 
@@ -88,7 +95,6 @@ const PartsByState = () => {
           Piezas en estado {state?.replace(/_/g, " ")}
         </h1>
 
-        {/* Modal */}
         {showModal && (
           <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full">
@@ -140,10 +146,10 @@ const PartsByState = () => {
                     </p>
                   </div>
                   <button
-                    onClick={() => handleTakeTask(part.partId)}
+                    onClick={() => handleTakePart(part.partId)}
                     className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                   >
-                    Tomar tarea
+                    Tomar pieza
                   </button>
                 </li>
               ))}

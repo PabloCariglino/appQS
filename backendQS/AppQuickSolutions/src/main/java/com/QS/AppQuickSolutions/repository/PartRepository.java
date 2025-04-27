@@ -24,9 +24,9 @@ public interface PartRepository extends JpaRepository<Part, UUID> {
     Optional<Part> findById(UUID partId);
 
     // Optional<Part> findByPartState(PartState state);
-    List<Part> findAllByPartState(PartState partState);
+    // List<Part> findAllByPartState(PartState partState);
 
-
+    List<Part> findByPartState(PartState partState);
     
 
 }

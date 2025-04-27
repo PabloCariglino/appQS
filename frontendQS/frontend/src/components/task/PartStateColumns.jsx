@@ -1,21 +1,21 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthContext from "../../auth/UseAuthContext";
-import TaskService from "../../services/TaskService";
+import PartStateGroupService from "../../services/PartStateGroupService";
 
-const Tasks = () => {
-  const [tasksByState, setTasksByState] = useState([]);
+const PartStateColumns = () => {
+  const [partsByState, setPartsByState] = useState([]);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { role } = useAuthContext();
 
   useEffect(() => {
-    const fetchTasks = async () => {
-      const response = await TaskService.getAllTasksByState();
-      if (response.success) setTasksByState(response.data);
+    const fetchParts = async () => {
+      const response = await PartStateGroupService.getAllPartsByState();
+      if (response.success) setPartsByState(response.data);
       else setError(response.message);
     };
-    fetchTasks();
+    fetchParts();
   }, []);
 
   const basePath = role === "ADMIN" ? "/admin" : "/operator";
@@ -40,7 +40,7 @@ const Tasks = () => {
     <div className="min-h-screen flex flex-col bg-white">
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-8 lg:px-10 py-8">
         <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-center text-gray-800">
-          Tareas
+          Piezas por Estado
         </h1>
         {error && (
           <div className="bg-red-50 text-red-600 p-3 rounded mb-4 text-center">
@@ -48,10 +48,10 @@ const Tasks = () => {
           </div>
         )}
         <div className="flex flex-wrap gap-2 sm:gap-3">
-          {tasksByState.map((stateGroup, index) => (
+          {partsByState.map((stateGroup, index) => (
             <div
               key={index}
-              className="flex-1 w-full sm:w-auto min-w-[150px] max-w-[200px] sm:max-w-[220px] lg:max-w-[250px] xl:max-w-[280px] bg-white rounded-lg shadow-sm border border-gray-200"
+              className="flex-1 w-full sm W-auto min-w-[150px] max-w-[200px] sm:max-w-[220px] lg:max-w-[250px] xl:max-w-[280px] bg-white rounded-lg shadow-sm border border-gray-200"
             >
               <div
                 className="text-white flex items-center justify-center min-h-[48px] py-2 rounded-t-lg cursor-pointer hover:brightness-110 transition-colors"
@@ -106,4 +106,4 @@ const Tasks = () => {
   );
 };
 
-export default Tasks;
+export default PartStateColumns;

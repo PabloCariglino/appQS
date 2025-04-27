@@ -22,4 +22,8 @@ public class OperatorMetricsDTO {
     private User user;
     private List<PartStatusTracking> completedParts;
     private Map<PartState, Double> avgDurationByCategory;
+    private Map<PartState, List<PartStatusTracking>> trackingsByInitialState;
+    private Map<String, Long> partCountByPeriod; // e.g., {"DAY": 5, "MONTH": 20, "YEAR": 100}
+    private long totalTasks; // Total de tareas completadas
+    private double averageTaskDuration; // Duración promedio general de las tareas
 }

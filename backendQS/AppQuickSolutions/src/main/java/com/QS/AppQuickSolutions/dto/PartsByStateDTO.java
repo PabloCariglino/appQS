@@ -16,7 +16,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @Getter
 @Setter
-public class StatePartsDTO {
+public class PartsByStateDTO {
     private PartState state;
-    private List<PartSummaryDTO> parts;
+    private List<PartTrackingSummaryDTO> parts;
 }
