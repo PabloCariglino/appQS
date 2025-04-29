@@ -106,3 +106,13 @@ export const backendLogout = async (setIsLoggedIn, setRole) => {
     throw error;
   }
 };
+
+export const getCurrentUser = async () => {
+  try {
+    const response = await api.get("/auth/current-user");
+    return response.data; // Devuelve el UserDto con userName
+  } catch (error) {
+    console.error("Error al obtener el usuario actual:", error);
+    return null;
+  }
+};

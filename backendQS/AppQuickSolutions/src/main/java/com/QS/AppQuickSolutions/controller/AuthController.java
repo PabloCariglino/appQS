@@ -41,11 +41,13 @@ public class AuthController {
         try {
             String accessToken = authService.authenticateUser(loginRequest.getEmail(), loginRequest.getPassword());
             String refreshToken = jwtTokenProvider.generateRefreshToken(loginRequest.getEmail());
+            User user = userRepository.findByEmail(loginRequest.getEmail())
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
             System.out.println("Login successful for email: " + loginRequest.getEmail());
-            return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken));
+            return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken, user.getUserName(), user.getRole().toString()));
         } catch (Exception e) {
             System.out.println("Login failed for email: " + loginRequest.getEmail() + " - Error: " + e.getMessage());
-            return ResponseEntity.status(401).body(new LoginResponse(null, null));
+            return ResponseEntity.status(401).body(new LoginResponse(null, null, null, null));
         }
     }
 
@@ -57,32 +59,32 @@ public class AuthController {
         try {
             if (jwtTokenProvider.validateRefreshToken(refreshToken)) {
                 String username = jwtTokenProvider.getUsernameFromRefreshToken(refreshToken);
-                String roles = authService.getRolesForUser(username); // Obtener roles desde AuthService
+                String roles = authService.getRolesForUser(username);
                 String newAccessToken = jwtTokenProvider.generateAccessTokenFromUsername(username, roles);
                 System.out.println("Access token refreshed successfully for user: " + username);
-                return ResponseEntity.ok(new LoginResponse(newAccessToken, refreshToken));
+                return ResponseEntity.ok(new LoginResponse(newAccessToken, refreshToken, username, roles));
             } else {
                 System.out.println("Invalid refresh token provided.");
-                return ResponseEntity.status(403).body(new LoginResponse(null, null));
+                return ResponseEntity.status(403).body(new LoginResponse(null, null, null, null));
             }
         } catch (Exception e) {
             System.out.println("Error refreshing access token: " + e.getMessage());
-            return ResponseEntity.status(500).body(new LoginResponse(null, null));
+            return ResponseEntity.status(500).body(new LoginResponse(null, null, null, null));
         }
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser(HttpServletRequest request) {
-    String token = jwtTokenProvider.getJwtFromRequest(request);
-    if (token != null && jwtTokenProvider.validateToken(token)) {
-        System.out.println("Usuario deslogueado correctamente.");
-        return ResponseEntity.ok("Logout exitoso.");
-    } else {
-        System.out.println("No se encontró un token válido para desloguear.");
-        return ResponseEntity.status(400).body("Token inválido o inexistente.");
+        String token = jwtTokenProvider.getJwtFromRequest(request);
+        if (token != null && jwtTokenProvider.validateToken(token)) {
+            System.out.println("Usuario deslogueado correctamente.");
+            return ResponseEntity.ok("Logout exitoso.");
+        } else {
+            System.out.println("No se encontró un token válido para desloguear.");
+            return ResponseEntity.status(400).body("Token inválido o inexistente.");
+        }
     }
-    }
- 
+
     @GetMapping("/current-user")
     public ResponseEntity<UserDto> getCurrentUser(Authentication authentication) {
         String email = authentication.getName();
@@ -97,5 +99,4 @@ public class AuthController {
         userDto.setRole(user.getRole());
         return ResponseEntity.ok(userDto);
     }
-
 }

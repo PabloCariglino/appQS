@@ -1,16 +1,30 @@
 import { LogOut, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { backendLogout } from "../auth/AuthService";
+import { backendLogout, getCurrentUser } from "../auth/AuthService";
 import useAuthContext from "../auth/UseAuthContext";
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [username, setUsername] = useState(null); // Estado para el nombre del usuario
   const { isLoggedIn, role, setIsLoggedIn, setRole } = useAuthContext();
   const navigate = useNavigate();
   const location = useLocation();
-  const dropdownRef = useRef(null); // Ref para el dropdown
+  const dropdownRef = useRef(null);
+
+  // Obtener el nombre del usuario al cargar el componente
+  useEffect(() => {
+    const fetchUsername = async () => {
+      if (isLoggedIn) {
+        const userData = await getCurrentUser();
+        if (userData) {
+          setUsername(userData.userName);
+        }
+      }
+    };
+    fetchUsername();
+  }, [isLoggedIn]);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -20,7 +34,6 @@ function Navbar() {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  // Cerrar el dropdown al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -40,6 +53,7 @@ function Navbar() {
   const handleLogout = async () => {
     try {
       await backendLogout(setIsLoggedIn, setRole);
+      setUsername(null); // Limpiar el nombre al desloguear
       console.log("Usuario deslogueado correctamente.");
     } catch (error) {
       console.error("Error al desloguear:", error);
@@ -69,8 +83,6 @@ function Navbar() {
   };
 
   const isHome = location.pathname === "/" && !isLoggedIn;
-
-  // Determinar la base de las rutas según el rol
   const basePath =
     role === "ADMIN" ? "/admin" : role === "OPERATOR" ? "/operator" : "";
 
@@ -101,7 +113,7 @@ function Navbar() {
               <li className="my-1 md:my-0">
                 <button
                   onClick={handleHomeClick}
-                  className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                  className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center"
                 >
                   Inicio
                 </button>
@@ -110,7 +122,7 @@ function Navbar() {
                 <li className="my-1 md:my-0">
                   <Link
                     to={`${basePath}/tasks`}
-                    className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                    className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center"
                   >
                     Tareas
                   </Link>
@@ -120,18 +132,17 @@ function Navbar() {
                 <li className="my-1 md:my-0">
                   <Link
                     to={`${basePath}/user-tasks`}
-                    className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                    className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center"
                   >
                     Mis Tareas
                   </Link>
                 </li>
               )}
-
               {isLoggedIn && (role === "ADMIN" || role === "OPERATOR") && (
                 <li className="my-1 md:my-0">
                   <Link
                     to={`${basePath}/project-list`}
-                    className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                    className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center"
                   >
                     Proyectos
                   </Link>
@@ -140,7 +151,7 @@ function Navbar() {
               <li className="my-1 md:my-0">
                 <Link
                   to={`${basePath}/part-scanner`}
-                  className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                  className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center"
                 >
                   Escanear Piezas
                 </Link>
@@ -151,7 +162,7 @@ function Navbar() {
             <li className="my-1 md:my-0">
               <Link
                 to="/admin/user-list"
-                className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center"
               >
                 Usuarios
               </Link>
@@ -161,18 +172,17 @@ function Navbar() {
             <li className="my-1 md:my-0">
               <Link
                 to={`${basePath}/operator-performance`}
-                className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center"
               >
                 Rendimiento
               </Link>
             </li>
           )}
-
           {!isLoggedIn && (
             <li className="my-1 md:my-0">
               <Link
                 to="/contact"
-                className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300"
+                className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center"
               >
                 Contacto
               </Link>
@@ -180,9 +190,8 @@ function Navbar() {
           )}
         </ul>
 
-        {/* User Icon and Logout Dropdown (Derecha) */}
+        {/* User Icon, Username, and Logout Dropdown (Derecha) */}
         <div className="flex items-center">
-          {/* Menu Toggle (Mobile) */}
           <div
             className="md:hidden text-white text-2xl cursor-pointer mr-4"
             onClick={toggleMenu}
@@ -197,6 +206,7 @@ function Navbar() {
                 className="text-white font-medium py-1 px-4 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex items-center gap-2"
               >
                 <User size={20} />
+                <span className="text-base">{username || "Usuario"}</span>
               </button>
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-md z-20">

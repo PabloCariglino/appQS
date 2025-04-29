@@ -5,6 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -66,6 +67,12 @@ public class PartTrackingService {
         Part part = partRepository.findById(partId)
                 .orElseThrow(() -> new RuntimeException("Pieza no encontrada: " + partId));
 
+        // Verificar si la pieza ya está tomada
+        Optional<PartStatusTracking> existingTracking = partStatusTrackingRepository.findByPartAndIsCompletedFalse(part);
+        if (existingTracking.isPresent()) {
+            throw new RuntimeException("La pieza ya está tomada por otro usuario.");
+        }
+
         // Verificar si el usuario ya tiene una pieza activa
         List<PartStatusTracking> activeTasks = partStatusTrackingRepository.findByUserOperatorUserIDAndIsCompletedFalse(userId);
         if (!activeTasks.isEmpty()) {
@@ -80,6 +87,7 @@ public class PartTrackingService {
         tracking.setInitialPartState(part.getPartState());
         tracking.setStartTime(LocalDateTime.now());
         tracking.setCompleted(false);
+        tracking.setTaken(true); // Marcar la pieza como tomada
 
         return partStatusTrackingRepository.save(tracking);
     }
@@ -96,6 +104,7 @@ public class PartTrackingService {
 
         tracking.setEndTime(LocalDateTime.now());
         tracking.setCompleted(true);
+        tracking.setTaken(false); // Marcar la pieza como no tomada al completar
 
         // Calcular la duración de la tarea
         long taskDuration = java.time.Duration.between(tracking.getStartTime(), tracking.getEndTime()).toMinutes();

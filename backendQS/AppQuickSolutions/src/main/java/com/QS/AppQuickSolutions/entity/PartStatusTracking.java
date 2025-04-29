@@ -56,6 +56,7 @@ public class PartStatusTracking {
     @Column
     private Long taskDuration; // Duración de la tarea en minutos
 
+    private boolean isTaken; // campo para indicar si la pieza está tomada
     private boolean isCompleted = false; //estado para saber si en la píeza se completo o no su trabajo
 
   

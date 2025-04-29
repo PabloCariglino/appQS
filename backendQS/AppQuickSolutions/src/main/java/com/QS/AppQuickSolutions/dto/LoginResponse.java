@@ -3,10 +3,14 @@ package com.QS.AppQuickSolutions.dto;
 public class LoginResponse {
     private String accessToken;
     private String refreshToken;
+    private String username;
+    private String role;
 
-    public LoginResponse(String accessToken, String refreshToken) {
+    public LoginResponse(String accessToken, String refreshToken, String username, String role) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
+        this.username = username;
+        this.role = role;
     }
 
     public String getAccessToken() {
@@ -23,5 +27,21 @@ public class LoginResponse {
 
     public void setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
     }
 }

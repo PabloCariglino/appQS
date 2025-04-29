@@ -18,6 +18,9 @@ const PartsByState = () => {
       if (response.success) {
         const stateGroup = response.data.find((group) => group.state === state);
         const partsData = stateGroup ? stateGroup.parts : [];
+        if (import.meta.env.MODE === "development") {
+          console.log("fetchParts: Datos de piezas recibidos:", partsData);
+        }
         setParts(partsData);
         if (partsData.length === 0) {
           setError(
@@ -40,9 +43,14 @@ const PartsByState = () => {
     fetchParts();
   }, [state]);
 
-  const handleTakePart = async (partId) => {
+  const handleTakePart = async (partId, isTaken) => {
+    if (isTaken) {
+      setModalMessage("Esta pieza ya está tomada por otro usuario.");
+      setShowModal(true);
+      return;
+    }
+
     try {
-      // Verificar si el usuario tiene tareas activas
       const activeTasksResponse = await PartTrackingService.getActiveTasks();
       if (!activeTasksResponse.success) {
         setModalMessage(activeTasksResponse.message);
@@ -77,7 +85,9 @@ const PartsByState = () => {
       }
     } catch (err) {
       setModalMessage(
-        err.message || "Error al tomar la pieza. Por favor, intenta de nuevo."
+        err.response?.data?.message ||
+          err.message ||
+          "Error al tomar la pieza. Por favor, intenta de nuevo."
       );
       setShowModal(true);
     }
@@ -145,12 +155,24 @@ const PartsByState = () => {
                       {part.partName}
                     </p>
                   </div>
-                  <button
-                    onClick={() => handleTakePart(part.partId)}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                  >
-                    Tomar pieza
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleTakePart(part.partId, part.isTaken)}
+                      disabled={part.isTaken}
+                      className={`px-3 py-1 rounded text-white ${
+                        part.isTaken
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-blue-500 hover:bg-blue-600"
+                      }`}
+                    >
+                      Tomar pieza
+                    </button>
+                    {part.isTaken && (
+                      <span className="text-red-500 text-xs italic">
+                        Pieza ya tomada
+                      </span>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

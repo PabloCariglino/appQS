@@ -27,4 +27,5 @@ public class PartTrackingSummaryDTO {
     private LocalDateTime startTime;
     private LocalDateTime endTime; 
     private boolean completed;
+    private boolean isTaken;
 }
