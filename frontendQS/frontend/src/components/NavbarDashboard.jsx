@@ -1,17 +1,20 @@
 import { LogOut, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { FaQrcode, FaTruck } from "react-icons/fa";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { backendLogout, getCurrentUser } from "../auth/AuthService";
 import useAuthContext from "../auth/UseAuthContext";
 
 function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isScannerDropdownOpen, setIsScannerDropdownOpen] = useState(false);
   const [username, setUsername] = useState(null);
   const { isLoggedIn, role, setIsLoggedIn, setRole } = useAuthContext();
-  const navigate = useNavigate(); // Importamos y definimos useNavigate
+  const navigate = useNavigate();
   const location = useLocation();
-  const dropdownRef = useRef(null);
+  const userDropdownRef = useRef(null);
+  const scannerDropdownRef = useRef(null);
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -27,28 +30,57 @@ function Navbar() {
   }, [isLoggedIn]);
 
   const toggleMenu = () => {
-    setIsOpen(!isOpen);
+    setIsOpen((prev) => !prev);
   };
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
+  const toggleUserDropdown = () => {
+    setIsUserDropdownOpen(!isUserDropdownOpen);
+  };
+
+  const toggleScannerDropdown = () => {
+    setIsScannerDropdownOpen(!isScannerDropdownOpen);
   };
 
   useEffect(() => {
-    const handleClickOutsideDropdown = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
+    const handleClickOutsideUserDropdown = (event) => {
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(event.target)
+      ) {
+        setIsUserDropdownOpen(false);
       }
     };
 
-    if (isDropdownOpen) {
-      document.addEventListener("mousedown", handleClickOutsideDropdown);
+    if (isUserDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutsideUserDropdown);
     }
 
     return () => {
-      document.removeEventListener("mousedown", handleClickOutsideDropdown);
+      document.removeEventListener("mousedown", handleClickOutsideUserDropdown);
     };
-  }, [isDropdownOpen]);
+  }, [isUserDropdownOpen]);
+
+  useEffect(() => {
+    const handleClickOutsideScannerDropdown = (event) => {
+      if (
+        scannerDropdownRef.current &&
+        !scannerDropdownRef.current.contains(event.target)
+      ) {
+        setIsScannerDropdownOpen(false);
+      }
+    };
+
+    if (isScannerDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutsideScannerDropdown);
+    }
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleClickOutsideScannerDropdown
+      );
+    };
+  }, [isScannerDropdownOpen]);
 
   useEffect(() => {
     const handleClickOutsideMenu = (event) => {
@@ -119,7 +151,7 @@ function Navbar() {
               <li className="my-1 md:my-0">
                 <Link
                   to={getHomePath()}
-                  className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base"
+                  className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base w-full"
                 >
                   Inicio
                 </Link>
@@ -127,10 +159,10 @@ function Navbar() {
               {isLoggedIn && role === "ADMIN" && (
                 <li className="my-1 md:my-0">
                   <Link
-                    to={`${basePath}/tasks`}
-                    className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base"
+                    to={`${basePath}/part-state-dashboard`}
+                    className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base w-full"
                   >
-                    Tareas
+                    Produccion
                   </Link>
                 </li>
               )}
@@ -138,7 +170,7 @@ function Navbar() {
                 <li className="my-1 md:my-0">
                   <Link
                     to={`${basePath}/user-tasks`}
-                    className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base"
+                    className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base w-full"
                   >
                     Mis Tareas
                   </Link>
@@ -148,27 +180,50 @@ function Navbar() {
                 <li className="my-1 md:my-0">
                   <Link
                     to={`${basePath}/project-list`}
-                    className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base"
+                    className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base w-full"
                   >
                     Proyectos
                   </Link>
                 </li>
               )}
-              <li className="my-1 md:my-0">
-                <Link
-                  to={`${basePath}/part-scanner`}
-                  className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base"
-                >
-                  Escanear Piezas
-                </Link>
-              </li>
+              {/* Dropdown para Scanner */}
+              {isLoggedIn && (role === "ADMIN" || role === "OPERATOR") && (
+                <li className="my-1 md:my-0 relative" ref={scannerDropdownRef}>
+                  <button
+                    onClick={toggleScannerDropdown}
+                    className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base w-full"
+                  >
+                    Scanner
+                  </button>
+                  {isScannerDropdownOpen && (
+                    <div className="absolute left-0 md:left-auto md:right-0 mt-2 w-52 bg-white rounded-lg shadow-md z-20">
+                      <Link
+                        to={`${basePath}/part-scanner`}
+                        className="flex items-center px-4 py-2 text-gray-800 hover:bg-gray-100"
+                        onClick={() => setIsScannerDropdownOpen(false)}
+                      >
+                        <FaQrcode className="text-sm text-blue-600 mr-2" />
+                        Ingreso Recepción
+                      </Link>
+                      <Link
+                        to={`${basePath}/delivery-scanner`}
+                        className="flex items-center px-4 py-2 text-gray-800 hover:bg-gray-100"
+                        onClick={() => setIsScannerDropdownOpen(false)}
+                      >
+                        <FaTruck className="text-sm text-blue-600 mr-2" />
+                        Salida a Instalación
+                      </Link>
+                    </div>
+                  )}
+                </li>
+              )}
             </>
           )}
           {isLoggedIn && role === "ADMIN" && (
             <li className="my-1 md:my-0">
               <Link
                 to="/admin/user-list"
-                className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base"
+                className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base w-full"
               >
                 Usuarios
               </Link>
@@ -178,7 +233,7 @@ function Navbar() {
             <li className="my-1 md:my-0">
               <Link
                 to={`${basePath}/operator-performance`}
-                className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base"
+                className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base w-full"
               >
                 Rendimiento
               </Link>
@@ -188,7 +243,7 @@ function Navbar() {
             <li className="my-1 md:my-0">
               <Link
                 to="/contact"
-                className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base"
+                className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 flex justify-center items-center whitespace-nowrap text-center text-sm sm:text-base w-full"
               >
                 Contacto
               </Link>
@@ -206,15 +261,15 @@ function Navbar() {
           </div>
 
           {isLoggedIn ? (
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={userDropdownRef}>
               <button
-                onClick={toggleDropdown}
-                className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 flex items-center gap-2"
+                onClick={toggleUserDropdown}
+                className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 flex items-center gap-2"
               >
                 <User size={18} className="sm:size-6" />
                 <span className="text-base">{username || "Usuario"}</span>
               </button>
-              {isDropdownOpen && (
+              {isUserDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-md z-20">
                   <button
                     onClick={handleLogout}
@@ -229,7 +284,7 @@ function Navbar() {
           ) : (
             <Link
               to="/login"
-              className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-grill transition-all duration-300 text-sm sm:text-base"
+              className="text-white font-medium py-1 px-3 rounded hover:bg-gray-600 hover:text-gray-200 transition-all duration-300 text-sm sm:text-base"
             >
               Login
             </Link>

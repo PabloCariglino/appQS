@@ -19,8 +19,7 @@ import ProjectDetail from "./components/project/ProjectDetail";
 import ProjectList from "./components/project/ProjectList";
 import PartScanner from "./components/Scanner/PartScanner";
 import OperatorPerformance from "./components/task/OperatorPerformance";
-import PartsByState from "./components/task/PartsByState";
-import PartStateColumns from "./components/task/PartStateColumns";
+import PartStateDashboard from "./components/task/PartStateDashboard";
 import UserTasks from "./components/task/UserTasks";
 import RegisterUser from "./components/user/RegisterUser";
 import UserList from "./components/user/UserList";
@@ -115,9 +114,10 @@ const App = () => {
           <Route path="register-user" element={<RegisterUser />} />
           <Route path="user-list" element={<UserList />} />
           <Route path="part-scanner" element={<PartScanner />} />
-          <Route path="tasks" element={<PartStateColumns />} />
-          <Route path="parts/state/:state" element={<PartsByState />} />
+          {/* <Route path="tasks" element={<PartStateColumns />} />
+          <Route path="parts/state/:state" element={<PartsByState />} /> */}
           <Route path="user-tasks" element={<UserTasks />} />
+          <Route path="part-state-dashboard" element={<PartStateDashboard />} />
           <Route
             path="operator-performance"
             element={<OperatorPerformance />}
@@ -133,14 +133,15 @@ const App = () => {
             )
           }
         >
-          <Route index element={<PartStateColumns />} />{" "}
+          <Route index element={<PartStateDashboard />} />{" "}
           {/* Vista inicial para /operator */}
           <Route path="project-list" element={<ProjectList />} />
           <Route path="projects/:id" element={<ProjectDetail />} />
           <Route path="part-scanner" element={<PartScanner />} />
-          <Route path="tasks" element={<PartStateColumns />} />
-          <Route path="parts/state/:state" element={<PartsByState />} />
+          {/* <Route path="tasks" element={<PartStateColumns />} /> */}
+          {/* <Route path="parts/state/:state" element={<PartsByState />} /> */}
           <Route path="user-tasks" element={<UserTasks />} />
+          <Route path="part-state-dashboard" element={<PartStateDashboard />} />
           <Route
             path="operator-performance"
             element={<OperatorPerformance />}
