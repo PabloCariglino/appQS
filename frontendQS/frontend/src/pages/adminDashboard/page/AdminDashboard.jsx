@@ -5,12 +5,11 @@ import NavbarDashboard from "../../../components/NavbarDashboard";
 
 const AdminDashboard = () => {
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <NavbarDashboard />
-      <main>
+      <main className="flex-1 pt-16 sm:pt-20 pb-14 sm:pb-16">
         <Outlet />
       </main>
-
       <FooterDashboard />
     </div>
   );
