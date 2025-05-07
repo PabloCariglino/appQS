@@ -3,9 +3,10 @@ import esLocale from "@fullcalendar/core/locales/es";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
+import timeGridPlugin from "@fullcalendar/timegrid";
 import axios from "axios";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 import EventService from "../../services/EventService";
 
@@ -19,8 +20,10 @@ const Calendar = () => {
   const [newEvent, setNewEvent] = useState({
     title: "",
     date: "",
+    time: "",
     color: "#80CCE5",
   });
+  const heightCache = useRef(new Map());
 
   const pastelColors = [
     "#FFB3C1",
@@ -53,7 +56,12 @@ const Calendar = () => {
       setNewEvent({ ...event });
     } else {
       setSelectedEvent(null);
-      setNewEvent({ title: "", date: dateStr, color: pastelColors[0] });
+      setNewEvent({
+        title: "",
+        date: dateStr,
+        time: "",
+        color: pastelColors[0],
+      });
     }
     setModalIsOpen(true);
   };
@@ -72,6 +80,7 @@ const Calendar = () => {
       const eventData = {
         title: newEvent.title,
         date: newEvent.date,
+        time: newEvent.time || null,
         color: newEvent.color,
       };
 
@@ -120,108 +129,172 @@ const Calendar = () => {
     }
   };
 
-  // Calcular la altura dinámica según la cantidad de eventos por día
   const getDayCellHeight = (date) => {
-    const eventsOnDay = events.filter(
-      (event) => event.date === date.toISOString().split("T")[0]
-    );
+    const dateStr = date.toISOString().split("T")[0];
+    const eventsOnDay = events.filter((event) => event.date === dateStr);
     const eventCount = eventsOnDay.length;
-    return `${Math.max(eventCount * 30 + 30, 60)}px`; // 30px por evento + 30px base, con un mínimo de 60px
+    return `${20 + eventCount * 20}px`;
+  };
+
+  const handleDatesSet = (dateInfo) => {
+    const days = document.querySelectorAll(".fc-daygrid-day");
+    const currentDateStr = dateInfo.view.currentStart
+      .toISOString()
+      .split("T")[0];
+
+    const shouldRecalculate =
+      !heightCache.current.has(currentDateStr) ||
+      events.length !== heightCache.current.get("eventCount");
+
+    if (shouldRecalculate) {
+      heightCache.current.clear();
+      heightCache.current.set("eventCount", events.length);
+
+      days.forEach((day) => {
+        const dateStr = day.getAttribute("data-date");
+        const height = getDayCellHeight(new Date(dateStr));
+        if (heightCache.current.get(dateStr) !== height) {
+          day.style.height = height;
+          heightCache.current.set(dateStr, height);
+        }
+      });
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
-        <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
-          Dashboard del Administrador
-        </h2>
+      <div className="flex-grow mt-14 px-4 sm:px-6 md:px-10 py-10">
         {error && (
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6 text-center">
             {error}
           </div>
         )}
-        <div className="w-full max-w-[89vw] md:max-w-[89vw] lg:max-w-[88vw] mx-auto border border-gray-200 rounded-lg shadow-md p-6 bg-gray-50">
+        <div className="w-full max-w-[89vw] max-h-[88vh] overflow-y-auto mx-auto border border-gray-300 rounded-lg shadow-lg p-4 sm:p-6 bg-gray-50">
           <style>
             {`
-              /* Ajustar altura de los casilleros dinámicamente */
               .fc-daygrid-day-frame {
-                min-height: 60px; /* Altura mínima */
                 height: auto !important;
-                display: flex;
                 flex-direction: column;
+                padding: 4px;
               }
-              .fc-daygrid-day-frame:has(.fc-daygrid-event) {
-                min-height: 90px; /* Altura mínima cuando hay eventos */
+              .fc .fc-daygrid-body-unbalanced .fc-daygrid-day-events {
+                min-height: 5em;
+              
               }
               .fc-daygrid-day-events {
                 display: flex;
                 flex-direction: column;
-                gap: 4px;
-                flex-grow: 1;
-                overflow: hidden; /* Evitar desbordamiento */
+                gap: 1px;
+                overflow: hidden;
+              }
+              .fc-timegrid-event-harness > .fc-timegrid-event {
+                inset: 0px;
+                position: 0; 
               }
               .fc-daygrid-day-top {
-                margin-bottom: 4px;
+                margin-bottom: 1px;
+                font-size: 40px;
               }
-              /* Limitar altura y medidas en vistas mayores a 1024px */
-              @media (min-width: 1025px) {
-                .fc-daygrid-day-frame {
-                  max-height: 100px; /* Altura máxima para casilleros */
-                }
-                .fc-daygrid-day-events {
-                  gap: 2px;
-                }
-                .fc-daygrid-event {
-                  font-size: 11px; /* Reducir tamaño de fuente */
-                  padding: 1px 3px; /* Reducir padding */
-                  border-radius: 3px;
-                  line-height: 1.2; /* Ajustar altura de línea */
-                }
+              .fc-daygrid-event {
+                font-size: 20px;
+                padding: 2px 4px;
+                border-radius: 4px;
+                white-space: nowrap;
+                overflow: hidden;
+                // text-overflow: ellipsis;
               }
-              /* Estilos para pantallas menores a 450px */
-              @media (max-width: 450px) {
-                .fc-daygrid-day-frame {
-                  padding: 2px;
-                }
-                .fc-daygrid-day-frame:has(.fc-daygrid-event) {
-                  min-height: 90px; /* Mantener altura mínima con eventos en vista móvil */
-                }
-                .fc-daygrid-day-top {
+              .fc-timegrid-slot {
+                height: 2em;
+              }
+              .fc-timegrid-event {
+                font-size: 12px;
+                padding: 2px 4px;
+                border-radius: 4px;
+              }
+              @media (max-width: 640px) {
+                .fc {
                   font-size: 12px;
                 }
-                .fc-daygrid-day-events {
-                  gap: 2px;
+                .fc-daygrid-day-top {
+                  font-size: 10px;
+                }
+                .fc-daygrid-event {
+                  font-size: 8px;
+                  padding: 1px 2px;
+                }
+                .fc-timegrid-event {
+                  font-size: 10px;
+                  padding: 1px 2px;
+                  
+                }
+                .fc .fc-toolbar {
+                  flex-direction: column;
+                  gap: 6px;
+                }
+                .fc .fc-toolbar-title {
+                  font-size: 14px;
+                }
+                .fc .fc-button {
+                  font-size: 10px;
+                  padding: 2px 6px;
+                }
+              }
+              @media (min-width: 641px) and (max-width: 2560px) {
+                .fc {
+                  font-size: 16px;
+                }
+                .fc .fc-daygrid-body-unbalanced .fc-daygrid-day-events {
+                  min-height: 8em;
+                  position: relative;
+                }
+                .fc-daygrid-day-top {
+                  font-size: 13px;
                 }
                 .fc-daygrid-event {
                   font-size: 10px;
                   padding: 2px 4px;
-                  border-radius: 4px;
                 }
                 .fc .fc-toolbar {
-                  flex-direction: column;
+                  flex-direction: row;
                   gap: 8px;
                 }
                 .fc .fc-toolbar-title {
-                  font-size: 16px;
+                  font-size: 20px;
                 }
                 .fc .fc-button {
-                  font-size: 12px;
-                  padding: 4px 8px;
+                  font-size: 16px;
+                  padding: 5px 9px;
                 }
               }
             `}
           </style>
           <FullCalendar
-            plugins={[dayGridPlugin, interactionPlugin]}
+            plugins={[dayGridPlugin, interactionPlugin, timeGridPlugin]}
             initialView="dayGridMonth"
             locale={esLocale}
+            headerToolbar={{
+              left: "prev,next today",
+              center: "title",
+              right: "dayGridMonth,timeGridWeek,timeGridDay",
+            }}
+            slotLabelFormat={{
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            }}
             dateClick={(info) => openModal(null, info.dateStr)}
-            events={events.map((event) => ({
-              id: event.id.toString(),
-              title: event.title,
-              start: event.date,
-              color: event.color,
-            }))}
+            events={events.map((event) => {
+              const start = event.time
+                ? `${event.date}T${event.time}`
+                : event.date;
+              return {
+                id: event.id.toString(),
+                title: event.title,
+                start: start,
+                backgroundColor: event.color,
+                allDay: !event.time,
+              };
+            })}
             eventClick={(info) => {
               const clickedEvent = events.find(
                 (event) => event.id === parseInt(info.event.id)
@@ -229,21 +302,16 @@ const Calendar = () => {
               openModal(clickedEvent);
             }}
             eventContent={(eventInfo) => (
-              <div className="text-gray-800 font-medium text-sm leading-tight p-1 overflow-hidden">
-                <p className="whitespace-normal break-words max-[768px]:truncate">
+              <div
+                className="text-gray-800 font-medium text-sm leading-tight p-0 overflow-hidden"
+                style={{ backgroundColor: eventInfo.event.backgroundColor }}
+              >
+                <p className="whitespace-nowrap overflow-hidden text-overflow-ellipsis">
                   {eventInfo.event.title}
                 </p>
               </div>
             )}
-            datesSet={(dateInfo) => {
-              // Ajustar altura dinámicamente al renderizar el calendario
-              const days = document.querySelectorAll(".fc-daygrid-day");
-              days.forEach((day) => {
-                const date = new Date(day.getAttribute("data-date"));
-                const height = getDayCellHeight(date);
-                day.style.height = height;
-              });
-            }}
+            datesSet={handleDatesSet}
           />
         </div>
       </div>
@@ -285,6 +353,19 @@ const Calendar = () => {
                   setNewEvent({ ...newEvent, date: e.target.value })
                 }
                 required
+              />
+            </div>
+            <div className="mb-4">
+              <label className="block text-gray-700 mb-2 font-medium">
+                Hora del Evento (Opcional):
+              </label>
+              <input
+                type="time"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                value={newEvent.time}
+                onChange={(e) =>
+                  setNewEvent({ ...newEvent, time: e.target.value })
+                }
               />
             </div>
             <div className="mb-4">

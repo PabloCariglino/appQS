@@ -1,8 +1,9 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { FaPlus } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
-import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
+import useAuthContext from "../../auth/UseAuthContext";
 import CustomPartService from "../../services/CustomPartService";
 import PartMaterialService from "../../services/PartMaterialService";
 import ProjectService from "../../services/ProjectService";
@@ -36,9 +37,9 @@ function CreateProject() {
   const [showModal, setShowModal] = useState(false);
   const [newProjectId, setNewProjectId] = useState(null);
   const navigate = useNavigate();
-  const { role } = useAuthContext(); // Obtener el rol
+  const { role } = useAuthContext();
 
-  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
+  const basePath = role === "ADMIN" ? "/admin" : "/operator";
 
   useEffect(() => {
     const fetchOptions = async () => {
@@ -57,7 +58,6 @@ function CreateProject() {
     fetchOptions();
   }, []);
 
-  // Cargar la imagen de la pieza seleccionada en el dropdown
   useEffect(() => {
     const loadPieceImage = async () => {
       if (!newPiece.customPartId) {
@@ -104,7 +104,6 @@ function CreateProject() {
     loadPieceImage();
   }, [newPiece.customPartId, customPartOptions]);
 
-  // Cargar las imágenes de las piezas ya agregadas
   useEffect(() => {
     const loadPieceImages = async () => {
       const newImageUrls = { ...pieceImageUrls };
@@ -139,7 +138,7 @@ function CreateProject() {
             newImageUrls[piece.customPartId] = imageUrl;
           } catch (err) {
             console.error(
-              `Error al cargar la imagen para la pieza ${customPart.id}:`,
+              `Error al cargar la imagen para la pieza ${ProcurementCustomPart.id}:`,
               err
             );
             newImageUrls[piece.customPartId] = "/images/placeholder.png";
@@ -296,7 +295,7 @@ function CreateProject() {
 
         setTimeout(() => {
           navigate(`${basePath}/project-list`);
-        }, 3000);
+        }, 2000);
       } else {
         setError("Error al crear el proyecto");
       }
@@ -307,22 +306,22 @@ function CreateProject() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
-        <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
-          Crear Proyecto
-        </h2>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="flex-grow mt-20 px-2 py-2 sm:px-6 sm:py-3 md:px-3 md:py-3 max-h-[calc(100vh-5rem)] overflow-y-auto">
         {error && (
-          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6 text-center max-w-md mx-auto">
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-center sm:text-sm md:text-base">
             {error}
           </div>
         )}
-        <div className="w-full max-w-[95%] mx-auto bg-dashboard-background p-6 rounded-lg shadow-md">
+        <div className="w-full max-w-[98%] sm:max-w-[96%] mx-auto border border-gray-200 rounded-xl shadow-lg p-6 bg-white">
+          <h2 className="text-center text-2xl md:text-3xl font-bold text-red-600 mb-6">
+            Crear Proyecto
+          </h2>
           <form onSubmit={handleSubmit} className="w-full">
-            <div className="flex flex-col md:flex-row justify-between gap-5 mb-5">
-              <div className="w-full md:w-[48%]">
+            <div className="flex flex-col md:flex-row justify-between gap-3 mb-4">
+              <div className="w-full md:w-[43%]">
                 <div className="mb-4">
-                  <label className="block text-dashboard-text font-medium mb-2">
+                  <label className="block text-gray-800 font-medium mb-2">
                     Cliente
                   </label>
                   <input
@@ -332,11 +331,11 @@ function CreateProject() {
                       setProject({ ...project, clientAlias: e.target.value })
                     }
                     required
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                    className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-dashboard-text font-medium mb-2">
+                  <label className="block text-gray-800 font-medium mb-2">
                     Contacto
                   </label>
                   <input
@@ -346,13 +345,13 @@ function CreateProject() {
                       setProject({ ...project, contact: e.target.value })
                     }
                     required
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                    className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                   />
                 </div>
               </div>
-              <div className="w-full md:w-[48%]">
+              <div className="w-full md:w-[43%]">
                 <div className="mb-4">
-                  <label className="block text-dashboard-text font-medium mb-2">
+                  <label className="block text-gray-800 font-medium mb-2">
                     Fecha de Visita
                   </label>
                   <input
@@ -362,11 +361,12 @@ function CreateProject() {
                       setProject({ ...project, visitDateTime: e.target.value })
                     }
                     required
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                    step="300" // 5 minutes (300 seconds)
+                    className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                   />
                 </div>
                 <div className="mb-4">
-                  <label className="block text-dashboard-text font-medium mb-2">
+                  <label className="block text-gray-800 font-medium mb-2">
                     Fecha de Instalación Estimada
                   </label>
                   <input
@@ -379,79 +379,87 @@ function CreateProject() {
                       })
                     }
                     required
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                    step="300" // 5 minutes (300 seconds)
+                    className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                   />
                 </div>
               </div>
             </div>
 
-            <h3 className="text-lg font-semibold text-dashboard-text mb-4">
-              Piezas
-            </h3>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[calc(100vh-25rem)] md:max-h-[calc(100vh-37rem)] overflow-y-auto">
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="bg-dashboard-text text-white">
-                    <th className="p-3 text-center">Pieza</th>
-                    <th className="p-3 text-center">Imagen Pieza</th>
-                    <th className="p-3 text-center">Material</th>
-                    <th className="p-3 text-center">Peso Total (kg)</th>
-                    <th className="p-3 text-center">Espesor (mm)</th>
-                    <th className="p-3 text-center">Largo (mm)</th>
-                    <th className="p-3 text-center">Alto (mm)</th>
-                    <th className="p-3 text-center">Ancho (mm)</th>
+                  <tr className="bg-gray-600 text-white sticky top-0 z-10">
+                    <th className="p-1 text-center sm:p-1 md:p-1">Pieza</th>
+                    <th className="p-1 text-center sm:p-1 md:p-1">
+                      Imagen Pieza
+                    </th>
+                    <th className="p-1 text-center sm:p-2 md:p-3">Material</th>
+                    <th className="p-1 text-center sm:p-2 md:p-3">
+                      Peso Total (kg)
+                    </th>
+                    <th className="p-1 text-center sm:p-2 md:p-3">
+                      Espesor (mm)
+                    </th>
+                    <th className="p-1 text-center sm:p-2 md:p-3">
+                      Largo (mm)
+                    </th>
+                    <th className="p-1 text-center sm:p-2 md:p-3">Alto (mm)</th>
+                    <th className="p-1 text-center sm:p-2 md:p-3">
+                      Ancho (mm)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {project.pieces.map((piece, index) => (
                     <tr
                       key={index}
-                      className="border-b border-dashboard-border hover:bg-gray-100 transition-colors"
+                      className="border-b border-gray-200 hover:bg-gray-100 transition-colors"
                     >
-                      <td className="p-3 text-center text-dashboard-text">
+                      <td className="p-3 text-center text-gray-800 sm:p-2 md:p-3 sm:text-sm md:text-base">
                         {customPartOptions.find(
                           (p) =>
                             p.id.toString() === piece.customPartId.toString()
                         )?.customPartName || "No definido"}
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="p-3 text-center sm:p-2 md:p-3">
                         {pieceImageUrls[piece.customPartId] ? (
                           <img
                             src={pieceImageUrls[piece.customPartId]}
                             alt="Imagen de la pieza"
-                            className="w-12 h-12 object-contain border border-gray-300 rounded mx-auto"
+                            className="w-12 h-12 object-cover rounded mx-auto"
                           />
                         ) : (
-                          <span className="text-dashboard-text text-xs">
+                          <span className="text-gray-800 text-xs">
                             Sin imagen
                           </span>
                         )}
                       </td>
-                      <td className="p-3 text-center text-dashboard-text">
+                      <td className="p-3 text-center text-gray-800 sm:p-2 md:p-3 sm:text-sm md:text-base">
                         {materialOptions.find(
                           (m) =>
                             m.id.toString() === piece.partMaterialId.toString()
                         )?.materialName || "No definido"}
                       </td>
-                      <td className="p-3 text-center text-dashboard-text">
+                      <td className="p-3 text-center text-gray-800 sm:p-2 md:p-3 sm:text-sm md:text-base">
                         {piece.totalweightKg}
                       </td>
-                      <td className="p-3 text-center text-dashboard-text">
+                      <td className="p-3 text-center text-gray-800 sm:p-2 md:p-3 sm:text-sm md:text-base">
                         {piece.sheetThicknessMm}
                       </td>
-                      <td className="p-3 text-center text-dashboard-text">
+                      <td className="p-3 text-center text-gray-800 sm:p-2 md:p-3 sm:text-sm md:text-base">
                         {piece.lengthPiecesMm}
                       </td>
-                      <td className="p-3 text-center text-dashboard-text">
+                      <td className="p-3 text-center text-gray-800 sm:p-2 md:p-3 sm:text-sm md:text-base">
                         {piece.heightMm}
                       </td>
-                      <td className="p-3 text-center text-dashboard-text">
+                      <td className="p-3 text-center text-gray-800 sm:p-2 md:p-3 sm:text-sm md:text-base">
                         {piece.widthMm}
                       </td>
                     </tr>
                   ))}
                   <tr>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center sm:p-2 md:p-3">
                       <select
                         value={newPiece.customPartId}
                         onChange={(e) =>
@@ -460,7 +468,7 @@ function CreateProject() {
                             customPartId: e.target.value,
                           })
                         }
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                        className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                       >
                         <option value="">Seleccionar</option>
                         {customPartOptions.map((part) => (
@@ -470,20 +478,20 @@ function CreateProject() {
                         ))}
                       </select>
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center sm:p-2 md:p-3">
                       {selectedPieceImageUrl ? (
                         <img
                           src={selectedPieceImageUrl}
                           alt="Imagen de la pieza seleccionada"
-                          className="w-12 h-12 object-contain border border-gray-300 rounded mx-auto"
+                          className="w-12 h-12 object-cover rounded mx-auto"
                         />
                       ) : (
-                        <span className="text-dashboard-text text-xs">
+                        <span className="text-gray-800 text-xs">
                           Sin imagen
                         </span>
                       )}
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center sm:p-2 md:p-3">
                       <select
                         value={newPiece.partMaterialId}
                         onChange={(e) =>
@@ -492,7 +500,7 @@ function CreateProject() {
                             partMaterialId: e.target.value,
                           })
                         }
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                        className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                       >
                         <option value="">Seleccionar</option>
                         {materialOptions.map((material) => (
@@ -502,7 +510,7 @@ function CreateProject() {
                         ))}
                       </select>
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center sm:p-2 md:p-3">
                       <input
                         type="number"
                         value={newPiece.totalweightKg}
@@ -513,10 +521,10 @@ function CreateProject() {
                           })
                         }
                         placeholder="Peso Total (kg)"
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                        className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                       />
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center sm:p-2 md:p-3">
                       <input
                         type="number"
                         value={newPiece.sheetThicknessMm}
@@ -527,10 +535,10 @@ function CreateProject() {
                           })
                         }
                         placeholder="Espesor (mm)"
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                        className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                       />
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center sm:p-2 md:p-3">
                       <input
                         type="number"
                         value={newPiece.lengthPiecesMm}
@@ -541,10 +549,10 @@ function CreateProject() {
                           })
                         }
                         placeholder="Largo (mm)"
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                        className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                       />
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center sm:p-2 md:p-3">
                       <input
                         type="number"
                         value={newPiece.heightMm}
@@ -552,10 +560,10 @@ function CreateProject() {
                           setNewPiece({ ...newPiece, heightMm: e.target.value })
                         }
                         placeholder="Alto (mm)"
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                        className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                       />
                     </td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center sm:p-2 md:p-3">
                       <input
                         type="number"
                         value={newPiece.widthMm}
@@ -563,7 +571,7 @@ function CreateProject() {
                           setNewPiece({ ...newPiece, widthMm: e.target.value })
                         }
                         placeholder="Ancho (mm)"
-                        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+                        className="w-full p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
                       />
                     </td>
                   </tr>
@@ -571,18 +579,19 @@ function CreateProject() {
               </table>
             </div>
 
-            <div className="flex flex-col items-center gap-3 mb-5">
+            <div className="flex flex-col items-center gap-1 mb-4 mt-4">
               <div className="flex flex-col sm:flex-row gap-5 justify-center">
                 <button
                   type="button"
-                  className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
+                  className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm md:text-base sm:px-3 md:px-4"
                   onClick={handleAddPiece}
                 >
+                  <FaPlus className="text-sm sm:text-base" />
                   Agregar Pieza
                 </button>
                 <button
                   type="button"
-                  className="bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
+                  className="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 sm:text-sm sm:px-3 md:text-base md:px-4"
                   onClick={handleDuplicateLastPiece}
                 >
                   Duplicar Última Pieza
@@ -593,8 +602,9 @@ function CreateProject() {
             <div className="text-center mt-5">
               <button
                 type="submit"
-                className="bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-300"
+                className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm md:text-base sm:px-3 md:px-4 mx-auto"
               >
+                <FaPlus className="text-sm sm:text-base" />
                 Crear Proyecto
               </button>
             </div>

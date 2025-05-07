@@ -1,8 +1,9 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
+import { FaPlus, FaTrash } from "react-icons/fa"; // Importamos el ícono de papelera
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
-import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
+import useAuthContext from "../../auth/UseAuthContext";
 
 function UserList() {
   const [users, setUsers] = useState([]);
@@ -12,8 +13,8 @@ function UserList() {
   const [showModal, setShowModal] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
   const navigate = useNavigate();
-  const { role } = useAuthContext(); // Obtener el rol del usuario
-  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
+  const { role } = useAuthContext();
+  const basePath = role === "ADMIN" ? "/admin" : "/operator";
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -150,42 +151,43 @@ function UserList() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
-        <h2 className="text-center text-3xl md:text-4xl font-bold text-grill mb-6">
-          Lista de Usuarios
-        </h2>
+      <div className="flex-grow mt-5 px-4 sm:px-6 md:px-10 py-10">
         {error && (
           <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6 text-center">
             {error}
           </div>
         )}
-        <div className="w-full max-w-[89vw] mx-auto border border-dashboard-border rounded-lg shadow-md p-6 bg-dashboard-background">
+        <div className="w-full max-w-[96vw] mx-auto border border-gray-200 rounded-xl shadow-lg p-6 bg-white">
+          <h2 className="text-center text-2xl md:text-3xl font-bold mb-2 text-red-600">
+            Lista de Usuarios
+          </h2>
           {/* Botón de acción */}
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-start mb-4">
             <button
               onClick={handleRegisterUserClick}
-              className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
+              className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm md:text-base sm:px-3 md:px-4"
             >
+              <FaPlus className="text-sm sm:text-base" />
               Registrar Usuario
             </button>
           </div>
 
           {/* Campo de búsqueda */}
-          <div className="mb-4 flex justify-end">
+          <div className="mb-6 flex justify-center">
             <input
               type="text"
               placeholder="Buscar"
               value={searchTerm}
               onChange={handleSearchChange}
-              className="w-full sm:w-72 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+              className="w-full sm:w-64 p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
             />
           </div>
 
           {/* Tabla de usuarios */}
           {filteredUsers.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[calc(99vh-20rem)] overflow-y-auto">
               <table className="w-full border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-10">
                   <tr className="bg-dashboard-text text-white">
                     <th className="p-3 text-center">ID</th>
                     <th className="p-3 text-center">Nombre</th>
@@ -227,10 +229,10 @@ function UserList() {
                       </td>
                       <td className="p-3 text-center">
                         <button
-                          onClick={() => openauaDeleteModal(user)}
-                          className="bg-red-500 hover:bg-red-600 text-white font-medium py-1 px-3 rounded-lg transition-colors duration-300"
+                          onClick={() => openDeleteModal(user)}
+                          className="text-red-600 hover:text-red-700 transition-colors duration-300"
                         >
-                          Eliminar
+                          <FaTrash className="text-lg" />
                         </button>
                       </td>
                     </tr>

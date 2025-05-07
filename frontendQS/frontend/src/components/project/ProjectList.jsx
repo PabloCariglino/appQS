@@ -1,20 +1,24 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { FaPlus, FaSortDown, FaSortUp, FaTrash } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { getAccessToken } from "../../auth/AuthService";
-import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
+import useAuthContext from "../../auth/UseAuthContext";
 import ProjectService from "../../services/ProjectService";
 
 const ProjectList = () => {
   const [projects, setProjects] = useState([]);
-  const [filteredProjects, setFilteredProjects] = useState([]);
+  const [displayedProjects, setDisplayedProjects] = useState([]);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const observerRef = useRef(null);
+  const loadMoreRef = useRef(null);
   const navigate = useNavigate();
-  const { role } = useAuthContext(); // Usamos useAuthContext en lugar de AuthContext para consistencia
+  const { role } = useAuthContext();
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -36,7 +40,8 @@ const ProjectList = () => {
         if (response.success) {
           console.log("Lista de proyectos recibida:", response.data);
           setProjects(response.data);
-          setFilteredProjects(response.data);
+          setDisplayedProjects(response.data.slice(0, 20));
+          setHasMore(response.data.length > 20);
         } else {
           setError("Error al cargar los proyectos.");
         }
@@ -57,6 +62,34 @@ const ProjectList = () => {
     fetchProjects();
   }, []);
 
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          const currentLength = displayedProjects.length;
+          const nextProjects = projects.slice(
+            currentLength,
+            currentLength + 20
+          );
+          setDisplayedProjects((prev) => [...prev, ...nextProjects]);
+          setHasMore(currentLength + nextProjects.length < projects.length);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentLoadMoreRef = loadMoreRef.current;
+    if (currentLoadMoreRef) {
+      observerRef.current.observe(currentLoadMoreRef);
+    }
+
+    return () => {
+      if (currentLoadMoreRef && observerRef.current) {
+        observerRef.current.unobserve(currentLoadMoreRef);
+      }
+    };
+  }, [displayedProjects, hasMore, projects]);
+
   const basePath = role === "ADMIN" ? "/admin" : "/operator";
 
   const handleProjectClick = (id) => {
@@ -72,15 +105,16 @@ const ProjectList = () => {
     const value = e.target.value;
     setSearchTerm(value);
     if (value === "") {
-      setFilteredProjects(projects);
+      setDisplayedProjects(projects.slice(0, 20));
+      setHasMore(projects.length > 20);
     } else {
-      setFilteredProjects(
-        projects.filter((project) =>
-          [project.id, project.clientAlias, project.contact].some((val) =>
-            String(val).toLowerCase().includes(value.toLowerCase())
-          )
+      const filtered = projects.filter((project) =>
+        [project.id, project.clientAlias, project.contact].some((val) =>
+          String(val).toLowerCase().includes(value.toLowerCase())
         )
       );
+      setDisplayedProjects(filtered.slice(0, 20));
+      setHasMore(filtered.length > 20);
     }
   };
 
@@ -94,7 +128,7 @@ const ProjectList = () => {
       direction = "descending";
     }
 
-    const sortedProjects = [...filteredProjects].sort((a, b) => {
+    const sortedProjects = [...displayedProjects].sort((a, b) => {
       if (
         key === "createdDate" ||
         key === "visitDateTime" ||
@@ -120,7 +154,7 @@ const ProjectList = () => {
         : String(b[key]).localeCompare(String(a[key]));
     });
 
-    setFilteredProjects(sortedProjects);
+    setDisplayedProjects(sortedProjects);
     setSortConfig({ key, direction });
   };
 
@@ -138,8 +172,8 @@ const ProjectList = () => {
         setProjects((prevProjects) =>
           prevProjects.filter((project) => project.id !== projectId)
         );
-        setFilteredProjects((prevFiltered) =>
-          prevFiltered.filter((project) => project.id !== projectId)
+        setDisplayedProjects((prevDisplayed) =>
+          prevDisplayed.filter((project) => project.id !== projectId)
         );
 
         console.log(`Proyecto con ID ${projectId} eliminado con éxito.`);
@@ -188,154 +222,222 @@ const ProjectList = () => {
   const isAdmin = role === "ADMIN";
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
-        <h2
-          className={`text-center text-3xl md:text-4xl font-bold mb-6 ${
-            isAdmin ? "text-grill" : "text-blue-800"
-          }`}
-        >
-          Lista de Proyectos
-        </h2>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="flex-grow mt-5 px-4 sm:px-6 md:px-10 py-10">
         {error && (
-          <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6 text-center">
+          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6 text-center sm:text-sm md:text-base">
             {error}
           </div>
         )}
         {showSuccessMessage && (
           <div className="fixed inset-0 flex items-center justify-center z-50">
-            <div className="bg-green-500 text-white p-4 rounded-lg shadow-lg animate-fade-in-out">
+            <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in-out sm:text-sm md:text-base">
               Proyecto eliminado con éxito
             </div>
           </div>
         )}
         <div
-          className={`w-full max-w-[89vw] mx-auto border border-dashboard-border rounded-lg shadow-md p-6 ${
-            isAdmin ? "bg-dashboard-background" : "bg-gray-50"
-          }`}
+          className={`w-full max-w-[96vw] mx-auto border border-gray-200 rounded-xl shadow-lg p-6 bg-white`}
         >
           {isAdmin && (
-            <div className="flex flex-col sm:flex-row justify-between mb-4 gap-3">
+            <div className="flex flex-col sm:flex-row justify-between mb-6 gap-3">
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={handlePartCustomList}
-                  className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
+                  className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm md:text-base sm:px-3 md:px-4"
                 >
+                  <FaPlus className="text-sm sm:text-base" />
                   Crear Pieza
                 </button>
                 <button
                   onClick={handleMaterialList}
-                  className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
+                  className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm md:text-base sm:px-3 md:px-4"
                 >
+                  <FaPlus className="text-sm sm:text-base" />
                   Crear Material
                 </button>
               </div>
               <button
                 onClick={handleCreateProject}
-                className="bg-grill hover:bg-grill-dark text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300"
+                className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-300 flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm md:text-base sm:px-3 md:px-4"
               >
+                <FaPlus className="text-sm sm:text-base" />
                 Crear Proyecto
               </button>
             </div>
           )}
-
-          <div className="mb-4 flex justify-end">
+          <h2
+            className={`text-center text-2xl md:text-3xl font-bold mb-2 ${
+              isAdmin ? "text-red-600" : "text-blue-800"
+            }`}
+          >
+            Lista de Proyectos
+          </h2>
+          <div className="mb-6 flex justify-center">
             <input
               type="text"
               placeholder="Buscar"
               value={searchTerm}
               onChange={handleSearchChange}
-              className="w-full sm:w-72 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-grill"
+              className="w-full sm:w-64 p-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 sm:text-sm md:text-base"
             />
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[calc(100vh-20rem)] overflow-y-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr
                   className={
                     isAdmin
-                      ? "bg-dashboard-text text-white"
-                      : "bg-gray-600 text-white"
+                      ? "bg-gray-600 text-white sticky top-0 z-10"
+                      : "bg-gray-600 text-white sticky top-0 z-10"
                   }
                 >
                   <th
                     onClick={() => handleSort("createdDate")}
-                    className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                    className="p-3 text-center cursor-pointer hover:bg-gray-700 transition-colors sm:p-2 md:p-3 sm:hidden md:table-cell"
                   >
-                    Fecha de Creación
+                    <div className="flex items-center justify-center gap-1 sm:text-sm md:text-base">
+                      Fecha de Creación
+                      {sortConfig?.key === "createdDate" &&
+                        (sortConfig.direction === "ascending" ? (
+                          <FaSortUp className="text-white" />
+                        ) : (
+                          <FaSortDown className="text-white" />
+                        ))}
+                    </div>
                   </th>
                   <th
                     onClick={() => handleSort("id")}
-                    className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                    className="p-3 text-center cursor-pointer hover:bg-gray-700 transition-colors sm:p-2 md:p-3"
                   >
-                    ID
+                    <div className="flex items-center justify-center gap-1 sm:text-sm md:text-base">
+                      ID
+                      {sortConfig?.key === "id" &&
+                        (sortConfig.direction === "ascending" ? (
+                          <FaSortUp className="text-white" />
+                        ) : (
+                          <FaSortDown className="text-white" />
+                        ))}
+                    </div>
                   </th>
                   {isAdmin && (
                     <th
                       onClick={() => handleSort("clientAlias")}
-                      className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                      className="p-3 text-center cursor-pointer hover:bg-gray-700 transition-colors sm:p-2 md:p-3 sm:hidden md:table-cell"
                     >
-                      Nombre del Cliente
+                      <div className="flex items-center justify-center gap-1 sm:text-sm md:text-base">
+                        Nombre del Cliente
+                        {sortConfig?.key === "clientAlias" &&
+                          (sortConfig.direction === "ascending" ? (
+                            <FaSortUp className="text-white" />
+                          ) : (
+                            <FaSortDown className="text-white" />
+                          ))}
+                      </div>
                     </th>
                   )}
                   {isAdmin && (
                     <th
                       onClick={() => handleSort("contact")}
-                      className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                      className="p-3 text-center cursor-pointer hover:bg-gray-700 transition-colors sm:p-2 md:p-3 sm:hidden md:table-cell"
                     >
-                      Contacto
+                      <div className="flex items-center justify-center gap-1 sm:text-sm md:text-base">
+                        Contacto
+                        {sortConfig?.key === "contact" &&
+                          (sortConfig.direction === "ascending" ? (
+                            <FaSortUp className="text-white" />
+                          ) : (
+                            <FaSortDown className="text-white" />
+                          ))}
+                      </div>
                     </th>
                   )}
                   <th
                     onClick={() => handleSort("visitDateTime")}
-                    className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                    className="p-3 text-center cursor-pointer hover:bg-gray-700 transition-colors sm:p-2 md:p-3 sm:hidden md:table-cell"
                   >
-                    Fecha de Visita
+                    <div className="flex items-center justify-center gap-1 sm:text-sm md:text-base">
+                      Fecha de Visita
+                      {sortConfig?.key === "visitDateTime" &&
+                        (sortConfig.direction === "ascending" ? (
+                          <FaSortUp className="text-white" />
+                        ) : (
+                          <FaSortDown className="text-white" />
+                        ))}
+                    </div>
                   </th>
                   <th
                     onClick={() => handleSort("installationDateTime")}
-                    className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                    className="p-3 text-center cursor-pointer hover:bg-gray-700 transition-colors sm:p-2 md:p-3 sm:hidden md:table-cell"
                   >
-                    Fecha de Instalación Estimada
+                    <div className="flex items-center justify-center gap-1 sm:text-sm md:text-base">
+                      Fecha de Instalación Estimada
+                      {sortConfig?.key === "installationDateTime" &&
+                        (sortConfig.direction === "ascending" ? (
+                          <FaSortUp className="text-white" />
+                        ) : (
+                          <FaSortDown className="text-white" />
+                        ))}
+                    </div>
                   </th>
                   <th
                     onClick={() => handleSort("pieces")}
-                    className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                    className="p-3 text-center cursor-pointer hover:bg-gray-700 transition-colors sm:p-2 md:p-3 sm:hidden md:table-cell"
                   >
-                    Piezas
+                    <div className="flex items-center justify-center gap-1 sm:text-sm md:text-base">
+                      Piezas
+                      {sortConfig?.key === "pieces" &&
+                        (sortConfig.direction === "ascending" ? (
+                          <FaSortUp className="text-white" />
+                        ) : (
+                          <FaSortDown className="text-white" />
+                        ))}
+                    </div>
                   </th>
                   <th
                     onClick={() => handleSort("state")}
-                    className="p-3 text-center cursor-pointer hover:bg-[#4A5157] transition-colors"
+                    className="p-3 text-center cursor-pointer hover:bg-gray-700 transition-colors sm:p-2 md:p-3"
                   >
-                    Estado
+                    <div className="flex items-center justify-center gap-1 sm:text-sm md:text-base">
+                      Estado
+                      {sortConfig?.key === "state" &&
+                        (sortConfig.direction === "ascending" ? (
+                          <FaSortUp className="text-white" />
+                        ) : (
+                          <FaSortDown className="text-white" />
+                        ))}
+                    </div>
                   </th>
-                  {isAdmin && <th className="p-3 text-center">Acciones</th>}
+                  {isAdmin && (
+                    <th className="p-3 text-center sticky top-0 bg-gray-600 text-white sm:p-2 md:p-3">
+                      Acciones
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
-                {filteredProjects.map((project) => (
+                {displayedProjects.map((project) => (
                   <tr
                     key={project.id}
-                    className="border-b border-dashboard-border hover:bg-gray-100 transition-colors"
+                    className="border-b border-gray-200 hover:bg-gray-100 transition-colors"
                   >
                     <td
                       onClick={() => handleProjectClick(project.id)}
-                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                      className="p-3 text-center text-gray-800 cursor-pointer sm:p-2 md:p-3 sm:hidden md:table-cell sm:text-sm md:text-base text-wrap leading-5"
                     >
                       {formatDateOnly(project.createdDate)}
                     </td>
                     <td
                       onClick={() => handleProjectClick(project.id)}
-                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                      className="p-3 text-center text-gray-800 cursor-pointer sm:p-2 md:p-3 sm:text-sm md:text-base text-wrap leading-5"
                     >
                       {project.id}
                     </td>
                     {isAdmin && (
                       <td
                         onClick={() => handleProjectClick(project.id)}
-                        className="p-3 text-center text-dashboard-text cursor-pointer"
+                        className="p-3 text-center text-gray-800 cursor-pointer sm:p-2 md:p-3 sm:hidden md:table-cell sm:text-sm md:text-base text-wrap leading-5"
                       >
                         {project.clientAlias}
                       </td>
@@ -343,20 +445,20 @@ const ProjectList = () => {
                     {isAdmin && (
                       <td
                         onClick={() => handleProjectClick(project.id)}
-                        className="p-3 text-center text-dashboard-text cursor-pointer"
+                        className="p-3 text-center text-gray-800 cursor-pointer sm:p-2 md:p-3 sm:hidden md:table-cell sm:text-sm md:text-base text-wrap leading-5"
                       >
                         {project.contact}
                       </td>
                     )}
                     <td
                       onClick={() => handleProjectClick(project.id)}
-                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                      className="p-3 text-center text-gray-800 cursor-pointer sm:p-2 md:p-3 sm:hidden md:table-cell sm:text-sm md:text-base text-wrap leading-5"
                     >
                       {formatDateTimeWithoutSeconds(project.visitDateTime)}
                     </td>
                     <td
                       onClick={() => handleProjectClick(project.id)}
-                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                      className="p-3 text-center text-gray-800 cursor-pointer sm:p-2 md:p-3 sm:hidden md:table-cell sm:text-sm md:text-base text-wrap leading-5"
                     >
                       {formatDateTimeWithoutSeconds(
                         project.installationDateTime
@@ -364,54 +466,64 @@ const ProjectList = () => {
                     </td>
                     <td
                       onClick={() => handleProjectClick(project.id)}
-                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                      className="p-3 text-center text-gray-800 cursor-pointer sm:p-2 md:p-3 sm:hidden md:table-cell sm:text-sm md:text-base text-wrap leading-5"
                     >
                       {project.parts ? project.parts.length : 0}
                     </td>
                     <td
                       onClick={() => handleProjectClick(project.id)}
-                      className="p-3 text-center text-dashboard-text cursor-pointer"
+                      className="p-3 text-center text-gray-800 cursor-pointer sm:p-2 md:p-3 sm:text-sm md:text-base text-wrap leading-5"
                     >
                       {project.state ? "En proceso" : "Finalizado"}
                     </td>
                     {isAdmin && (
-                      <td className="p-3 text-center">
-                        <button
+                      <td className="p-3 sm:p-2 md:p-3 flex items-center justify-center h-full">
+                        <FaTrash
                           onClick={(e) => {
                             e.stopPropagation();
                             openDeleteModal(project.id);
                           }}
-                          className="bg-red-500 text-white text-sm px-3 py-1 rounded hover:bg-red-600 transition-colors duration-300"
-                        >
-                          Eliminar
-                        </button>
+                          className="text-red-500 hover:text-red-600 cursor-pointer sm:text-sm md:text-lg transition-colors duration-300 align-middle"
+                        />
                       </td>
                     )}
                   </tr>
                 ))}
               </tbody>
             </table>
+            {hasMore && (
+              <div
+                ref={loadMoreRef}
+                className="text-center py-3 sm:text-sm md:text-base"
+              >
+                <p className="text-gray-500 text-sm">
+                  Cargando más proyectos...
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">
+        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all scale-100 sm:p-4 md:p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center sm:text-sm md:text-lg">
               Confirmar Eliminación
             </h3>
-            <p>¿Estás seguro de que quieres eliminar este proyecto?</p>
-            <div className="mt-4 flex justify-end space-x-2">
+            <p className="text-gray-600 mb-6 text-center sm:text-sm md:text-base">
+              ¿Estás seguro de que quieres eliminar este proyecto?
+            </p>
+            <div className="flex justify-center space-x-3 sm:space-x-2 md:space-x-3">
               <button
                 onClick={closeModal}
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 sm:text-sm sm:px-3 md:text-base md:px-4"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 sm:text-sm sm:px-3 md:text-base md:px-4"
               >
                 Eliminar
               </button>

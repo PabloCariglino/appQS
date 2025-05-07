@@ -5,7 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { backendLogout, getCurrentUser } from "../auth/AuthService";
 import useAuthContext from "../auth/UseAuthContext";
 
-function Navbar() {
+function NavbarDashboard() {
   const [isOpen, setIsOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isScannerDropdownOpen, setIsScannerDropdownOpen] = useState(false);
@@ -16,6 +16,7 @@ function Navbar() {
   const userDropdownRef = useRef(null);
   const scannerDropdownRef = useRef(null);
   const menuRef = useRef(null);
+  const hamburgerRef = useRef(null);
 
   useEffect(() => {
     const fetchUsername = async () => {
@@ -84,7 +85,12 @@ function Navbar() {
 
   useEffect(() => {
     const handleClickOutsideMenu = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(event.target) &&
+        hamburgerRef.current &&
+        !hamburgerRef.current.contains(event.target)
+      ) {
         setIsOpen(false);
       }
     };
@@ -125,17 +131,17 @@ function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 w-full z-10 transition-all duration-300 ${
+      className={`fixed top-0 w-full h-20 z-10 transition-all duration-300 ${
         isHome ? "bg-transparent absolute" : "bg-gray-800"
       }`}
     >
-      <div className="flex items-center justify-between px-4 py-2 md:px-6 lg:px-8">
+      <div className="flex items-center justify-between px-4 h-full md:px-6 lg:px-8">
         {/* Logo (Izquierda) */}
         <div onClick={() => navigate(getHomePath())} className="cursor-pointer">
           <img
             src="/assets/LOGO-blanco2.jpg"
             alt="Logo Empresa"
-            className="h-10 w-auto sm:h-12"
+            className="h-12 w-auto sm:h-14"
           />
         </div>
 
@@ -144,7 +150,7 @@ function Navbar() {
           ref={menuRef}
           className={`${
             isOpen ? "flex" : "hidden"
-          } md:flex flex-col md:flex-row md:items-center md:gap-4 lg:gap-6 absolute md:static top-14 left-0 right-0 bg-gray-800 md:bg-transparent p-4 md:p-0 z-10 md:flex-1 md:justify-center md:max-w-[90%] lg:max-w-4xl md:mx-auto`}
+          } md:flex flex-col md:flex-row md:items-center md:gap-4 lg:gap-6 absolute md:static top-20 left-0 right-0 bg-gray-800 md:bg-transparent p-4 md:p-0 z-10 md:flex-1 md:justify-center md:max-w-[90%] lg:max-w-4xl md:mx-auto`}
         >
           {isLoggedIn && (role === "ADMIN" || role === "OPERATOR") && (
             <>
@@ -166,7 +172,8 @@ function Navbar() {
                   </Link>
                 </li>
               )}
-              {isLoggedIn && (role === "ADMIN" || role === "OPERATOR") && (
+
+              {isLoggedIn && role === "OPERATOR" && (
                 <li className="my-1 md:my-0">
                   <Link
                     to={`${basePath}/user-tasks`}
@@ -206,7 +213,7 @@ function Navbar() {
                         Ingreso Recepción
                       </Link>
                       <Link
-                        to={`${basePath}/delivery-scanner`}
+                        to={`${basePath}/packaged-part-scanner`}
                         className="flex items-center px-4 py-2 text-gray-800 hover:bg-gray-100"
                         onClick={() => setIsScannerDropdownOpen(false)}
                       >
@@ -229,7 +236,8 @@ function Navbar() {
               </Link>
             </li>
           )}
-          {isLoggedIn && (role === "ADMIN" || role === "OPERATOR") && (
+
+          {isLoggedIn && role === "OPERATOR" && (
             <li className="my-1 md:my-0">
               <Link
                 to={`${basePath}/operator-performance`}
@@ -254,6 +262,7 @@ function Navbar() {
         {/* User Icon, Username, and Logout Dropdown (Derecha) */}
         <div className="flex items-center">
           <div
+            ref={hamburgerRef}
             className="md:hidden text-white text-2xl cursor-pointer mr-4"
             onClick={toggleMenu}
           >
@@ -295,4 +304,4 @@ function Navbar() {
   );
 }
 
-export default Navbar;
+export default NavbarDashboard;

@@ -9,7 +9,7 @@ import PartScannerService from "../../services/PartScannerService";
 const successSound = new Audio("/sounds/success.mp3");
 const warningSound = new Audio("/sounds/warning.mp3");
 
-const PartScanner = () => {
+const PackagedPartScanner = () => {
   const [scannedParts, setScannedParts] = useState([]);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState(null);
@@ -305,7 +305,7 @@ const PartScanner = () => {
               isAdmin ? "text-red-600" : "text-blue-800"
             }`}
           >
-            Escaneo de recepción de piezas
+            Escaneo de piezas embaladas para envío
           </h2>
 
           {error && (
@@ -377,7 +377,7 @@ const PartScanner = () => {
               <h3 className="text-lg sm:text-xl font-semibold text-dashboard-text mb-4 text-center">
                 Últimas Piezas Escaneadas
               </h3>
-              <div className="overflow-x-auto max-h-[calc(100vh-20rem)] overflow-y-auto">
+              <div className="overflow-x-auto max-h-[calc(100vh-20rem)] overflow-y-auto ">
                 <table className="w-full border-collapse mx-auto max-w-6xl">
                   <thead>
                     <tr className="bg-gray-600 text-white text-sm sm:text-base">
@@ -452,4 +452,4 @@ const PartScanner = () => {
   );
 };
 
-export default PartScanner;
+export default PackagedPartScanner;

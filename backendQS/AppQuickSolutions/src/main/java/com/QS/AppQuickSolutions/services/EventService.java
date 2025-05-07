@@ -44,6 +44,7 @@ public class EventService {
         event.setTitle(eventDetails.getTitle());
         event.setDate(eventDetails.getDate());
         event.setColor(eventDetails.getColor());
+        event.setTime(eventDetails.getTime()); // Actualizamos el campo time
         try {
             return eventRepository.save(event);
         } catch (Exception e) {
@@ -70,5 +71,6 @@ public class EventService {
             throw new ValidationException("La fecha es obligatoria.");
         if (event.getColor() == null || event.getColor().trim().isEmpty())
             throw new ValidationException("El color es obligatorio.");
+        // No validamos time, ya que es opcional
     }
 }

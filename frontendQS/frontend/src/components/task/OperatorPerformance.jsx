@@ -58,7 +58,7 @@ const OperatorPerformance = () => {
           </div>
         ) : metrics ? (
           <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 text-center">
               <h2 className="text-xl font-semibold mb-4 text-gray-700">
                 Cantidad de Piezas Completadas
               </h2>
@@ -80,7 +80,7 @@ const OperatorPerformance = () => {
               <h2 className="text-xl font-semibold mb-4 text-gray-700">
                 Promedio de Tiempo por Categoría
               </h2>
-              <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-sm">
+              <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-lg">
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="px-4 py-2 text-left text-gray-700 font-semibold">

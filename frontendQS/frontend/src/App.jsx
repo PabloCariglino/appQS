@@ -17,6 +17,7 @@ import CustomPartList from "./components/partCustom/CustomPartList";
 import CreateProject from "./components/project/CreateProject";
 import ProjectDetail from "./components/project/ProjectDetail";
 import ProjectList from "./components/project/ProjectList";
+import PackagedPartScanner from "./components/Scanner/PackagedPartScanner";
 import PartScanner from "./components/Scanner/PartScanner";
 import OperatorPerformance from "./components/task/OperatorPerformance";
 import PartStateDashboard from "./components/task/PartStateDashboard";
@@ -114,8 +115,10 @@ const App = () => {
           <Route path="register-user" element={<RegisterUser />} />
           <Route path="user-list" element={<UserList />} />
           <Route path="part-scanner" element={<PartScanner />} />
-          {/* <Route path="tasks" element={<PartStateColumns />} />
-          <Route path="parts/state/:state" element={<PartsByState />} /> */}
+          <Route
+            path="packaged-part-scanner"
+            element={<PackagedPartScanner />}
+          />
           <Route path="user-tasks" element={<UserTasks />} />
           <Route path="part-state-dashboard" element={<PartStateDashboard />} />
           <Route
@@ -138,8 +141,10 @@ const App = () => {
           <Route path="project-list" element={<ProjectList />} />
           <Route path="projects/:id" element={<ProjectDetail />} />
           <Route path="part-scanner" element={<PartScanner />} />
-          {/* <Route path="tasks" element={<PartStateColumns />} /> */}
-          {/* <Route path="parts/state/:state" element={<PartsByState />} /> */}
+          <Route
+            path="packaged-part-scanner"
+            element={<PackagedPartScanner />}
+          />
           <Route path="user-tasks" element={<UserTasks />} />
           <Route path="part-state-dashboard" element={<PartStateDashboard />} />
           <Route

@@ -1,16 +1,20 @@
 /* eslint-disable react/prop-types */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import PartStateGroupService from "../../services/PartStateGroupService";
 import PartTrackingService from "../../services/PartTrackingService";
 
 const PartsByState = ({ state }) => {
   const [parts, setParts] = useState([]);
+  const [displayedParts, setDisplayedParts] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [partToTake, setPartToTake] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
+  const observerRef = useRef(null);
+  const loadMoreRef = useRef(null);
 
   useEffect(() => {
     const fetchParts = async () => {
@@ -26,6 +30,8 @@ const PartsByState = ({ state }) => {
             console.log("fetchParts: Datos de piezas recibidos:", partsData);
           }
           setParts(partsData);
+          setDisplayedParts(partsData.slice(0, 20));
+          setHasMore(partsData.length > 20);
           if (partsData.length === 0) {
             setError(
               `No se encontraron piezas en el estado ${(state || "").replace(
@@ -48,6 +54,31 @@ const PartsByState = ({ state }) => {
 
     if (state) fetchParts();
   }, [state]);
+
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore) {
+          const currentLength = displayedParts.length;
+          const nextParts = parts.slice(currentLength, currentLength + 20);
+          setDisplayedParts((prev) => [...prev, ...nextParts]);
+          setHasMore(currentLength + nextParts.length < parts.length);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentLoadMoreRef = loadMoreRef.current;
+    if (currentLoadMoreRef) {
+      observerRef.current.observe(currentLoadMoreRef);
+    }
+
+    return () => {
+      if (currentLoadMoreRef && observerRef.current) {
+        observerRef.current.unobserve(currentLoadMoreRef);
+      }
+    };
+  }, [displayedParts, hasMore, parts]);
 
   const handleTakePart = async (partId, isTaken) => {
     if (isTaken) {
@@ -97,7 +128,10 @@ const PartsByState = ({ state }) => {
             const stateGroup = response.data.find(
               (group) => group.state === state
             );
-            setParts(stateGroup ? stateGroup.parts : []);
+            const partsData = stateGroup ? stateGroup.parts : [];
+            setParts(partsData);
+            setDisplayedParts(partsData.slice(0, 20));
+            setHasMore(partsData.length > 20);
           }
         };
         await fetchParts();
@@ -133,8 +167,8 @@ const PartsByState = ({ state }) => {
   };
 
   return (
-    <div className="max-w-full">
-      <h1 className="text-xl font-semibold text-blue-800 mb-4 text-center">
+    <div className="max-w-full h-[calc(100vh-7rem)]">
+      <h1 className="text-xl font-semibold text-blue-800 text-center">
         Piezas en estado {(state || "").replace(/_/g, " ")}
       </h1>
 
@@ -192,12 +226,12 @@ const PartsByState = ({ state }) => {
           {error}
         </div>
       ) : parts.length > 0 ? (
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 max-h-[60vh] overflow-y-auto">
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 max-h-[calc(100vh-15rem)] overflow-y-auto mt-2 shadow-lg">
           <ul className="space-y-2">
-            {parts.map((part) => (
+            {displayedParts.map((part) => (
               <li
                 key={part.partId}
-                className="border-b border-gray-100 py-2 last:border-b-0 flex flex-col sm:flex-row sm:items-center sm:justify-between hover:bg-gray-50 transition-colors p-2 rounded-md"
+                className="border-b border-gray-100 py-2 last:border-b-0 flex flex-col sm:flex-row sm:items-center sm:justify-between hover:bg-gray-50 transition-colors p-2 rounded-md min-[1300px]:max-w-[100%]"
               >
                 <div className="mb-2 sm:mb-0">
                   <p className="text-gray-800 text-sm">
@@ -208,7 +242,8 @@ const PartsByState = ({ state }) => {
                     <span className="font-medium">Pieza ID:</span> {part.partId}
                   </p>
                   <p className="text-gray-800 text-sm">
-                    <span className="font-medium">Nombre:</span> {part.partName}
+                    <span className="font介质-medium">Nombre:</span>{" "}
+                    {part.partName}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -232,9 +267,14 @@ const PartsByState = ({ state }) => {
               </li>
             ))}
           </ul>
+          {hasMore && (
+            <div ref={loadMoreRef} className="text-center py-2">
+              <p className="text-gray-500 text-sm">Cargando más piezas...</p>
+            </div>
+          )}
         </div>
       ) : (
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 max-h-[calc(100vh-10rem)]">
           <p className="text-gray-500 text-sm text-center">
             No hay piezas en este estado.
           </p>

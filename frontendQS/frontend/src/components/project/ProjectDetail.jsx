@@ -5,7 +5,7 @@ import { FaPencilAlt, FaPrint, FaSortDown, FaSortUp } from "react-icons/fa";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useReactToPrint } from "react-to-print";
 import { getAccessToken } from "../../auth/AuthService";
-import useAuthContext from "../../auth/UseAuthContext"; // Añadimos esta importación para obtener el rol
+import useAuthContext from "../../auth/UseAuthContext";
 import PartService from "../../services/PartService";
 import ProjectService from "../../services/ProjectService";
 import QrCodeService from "../../services/QrCodeService";
@@ -48,7 +48,7 @@ const ProjectDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { role } = useAuthContext(); // Obtener el rol del usuario
+  const { role } = useAuthContext();
   const [project, setProject] = useState(null);
   const [originalProject, setOriginalProject] = useState(null);
   const [error, setError] = useState(null);
@@ -67,10 +67,9 @@ const ProjectDetail = () => {
   const [isQrLoaded, setIsQrLoaded] = useState(false);
   const printRef = useRef();
 
-  const isAdmin = role === "ADMIN"; // Determinar si el usuario es ADMIN
-  const basePath = role === "ADMIN" ? "/admin" : "/operator"; // Definir basePath
+  const isAdmin = role === "ADMIN";
+  const basePath = role === "ADMIN" ? "/admin" : "/operator";
 
-  // Manejar la impresión con react-to-print
   const handlePrint = useReactToPrint({
     content: () => {
       console.log("Accediendo a printRef.current:", printRef.current);
@@ -97,8 +96,8 @@ const ProjectDetail = () => {
     },
     onAfterPrint: () => {
       console.log("Impresión completada.");
-      setSelectedPartsToPrint([]); // Limpiar selección después de imprimir
-      setShowPrintModal(false); // Cerrar el modal después de imprimir
+      setSelectedPartsToPrint([]);
+      setShowPrintModal(false);
     },
     onPrintError: (errorLocation, error) => {
       console.error("Error al intentar imprimir:", errorLocation, error);
@@ -106,7 +105,6 @@ const ProjectDetail = () => {
     },
   });
 
-  // Cargar el proyecto
   useEffect(() => {
     const fetchProject = async () => {
       const token = getAccessToken();
@@ -141,7 +139,6 @@ const ProjectDetail = () => {
     fetchProject();
   }, [id, navigate, basePath]);
 
-  // Cargar las imágenes QR
   useEffect(() => {
     const loadQrImages = async () => {
       if (!project || !project.parts || project.parts.length === 0) {
@@ -227,7 +224,6 @@ const ProjectDetail = () => {
     };
   }, [project, navigate, basePath]);
 
-  // Cargar las imágenes de las piezas
   useEffect(() => {
     const loadPartImages = async () => {
       if (!project || !project.parts || project.parts.length === 0) return;
@@ -258,7 +254,7 @@ const ProjectDetail = () => {
               err.response?.status,
               err.message
             );
-            return { id: part.id, url: null }; // Retornar null en caso de error
+            return { id: part.id, url: null };
           }
         }
         return { id: part.id, url: null };
@@ -288,7 +284,6 @@ const ProjectDetail = () => {
     };
   }, [project]);
 
-  // Detectar cambios no guardados
   useEffect(() => {
     if (!project || !originalProject) return;
     const hasChanges =
@@ -296,7 +291,6 @@ const ProjectDetail = () => {
     setHasUnsavedChanges(hasChanges);
   }, [project, originalProject]);
 
-  // Confirmación al salir sin guardar cambios
   useBeforeUnload(hasUnsavedChanges);
 
   useEffect(() => {
@@ -323,7 +317,6 @@ const ProjectDetail = () => {
     return () => window.removeEventListener("popstate", handleNavigation);
   }, [hasUnsavedChanges, navigate, location.pathname]);
 
-  // Funciones de edición
   const startEditing = (field, partId = null) => {
     setEditingField({ field, partId });
   };
@@ -348,10 +341,8 @@ const ProjectDetail = () => {
     setEditingField(null);
   };
 
-  // Guardar cambios
   const saveChanges = async () => {
     try {
-      // Actualizar el proyecto
       const projectResponse = await ProjectService.updateProject(project.id, {
         clientAlias: project.clientAlias,
         contact: project.contact,
@@ -416,7 +407,6 @@ const ProjectDetail = () => {
           });
 
         if (partChanged) {
-          // Actualizar la pieza en el backend
           try {
             const partResponse = await PartService.updatePart(part.id, {
               customPart: part.customPart,
@@ -447,9 +437,7 @@ const ProjectDetail = () => {
         }
 
         if (projectChanged || partChanged) {
-          // Solo eliminar y regenerar el QR si el usuario es ADMIN
           if (isAdmin) {
-            // Eliminar el QR existente si existe
             if (part.qrCodeFilePath) {
               try {
                 const qrCodeId = part.qrCodeFilePath.split("_part_qr.png")[0];
@@ -475,7 +463,6 @@ const ProjectDetail = () => {
               }
             }
 
-            // Generar un nuevo QR
             try {
               const qrData = {
                 id: part.id,
@@ -523,7 +510,6 @@ const ProjectDetail = () => {
               continue;
             }
           } else {
-            // Si el usuario es OPERATOR, simplemente mantener la pieza sin modificar el QR
             updatedParts.push(part);
           }
         } else {
@@ -531,7 +517,6 @@ const ProjectDetail = () => {
         }
       }
 
-      // Actualizar el estado del proyecto y las piezas
       setProject((prev) => ({
         ...prev,
         parts: updatedParts,
@@ -562,7 +547,6 @@ const ProjectDetail = () => {
     }
   };
 
-  // Eliminar una pieza
   const deletePart = async (partId) => {
     try {
       const part = project.parts.find((p) => p.id === partId);
@@ -596,7 +580,6 @@ const ProjectDetail = () => {
     }
   };
 
-  // Funciones de búsqueda y ordenamiento
   const filteredParts =
     project?.parts?.filter((part) =>
       part.id.toString().toLowerCase().includes(searchTerm.toLowerCase())
@@ -628,7 +611,6 @@ const ProjectDetail = () => {
       minute: "2-digit",
     });
 
-  // Manejar la selección de piezas para imprimir
   const handleSelectPartToPrint = (partId) => {
     setSelectedPartsToPrint((prev) =>
       prev.includes(partId)
@@ -652,13 +634,11 @@ const ProjectDetail = () => {
     console.log("Estado de project:", project);
     console.log("Estado de isQrLoaded:", isQrLoaded);
 
-    // Validar que haya piezas seleccionadas
     if (!selectedPartsToPrint || selectedPartsToPrint.length === 0) {
       alert("Por favor, selecciona al menos una pieza para imprimir.");
       return;
     }
 
-    // Validar que las imágenes QR estén cargadas
     if (!isQrLoaded) {
       alert(
         "Las imágenes QR aún se están cargando. Por favor, espera un momento."
@@ -666,13 +646,11 @@ const ProjectDetail = () => {
       return;
     }
 
-    // Validar que project y project.parts estén definidos
     if (!project || !project.parts || project.parts.length === 0) {
       alert("No hay datos de proyecto o piezas disponibles para imprimir.");
       return;
     }
 
-    // Validar que el contenido a imprimir exista
     const partsToPrint = project.parts.filter((part) =>
       selectedPartsToPrint.includes(part.id)
     );
@@ -681,7 +659,6 @@ const ProjectDetail = () => {
       return;
     }
 
-    // Proceder con la impresión
     try {
       console.log("Llamando a handlePrint...");
       handlePrint();
@@ -726,23 +703,22 @@ const ProjectDetail = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
-      <div className="flex-grow mt-16 px-4 sm:px-6 md:px-10 py-10">
-        <h2
-          className={`text-center text-3xl md:text-4xl font-bold mb-8 ${
-            isAdmin ? "text-grill" : "text-blue-800"
-          }`}
-        >
-          Detalles del Proyecto
-        </h2>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="flex-grow mt-5 px-4 sm:px-6 md:px-10 py-10">
         <div
-          className={`w-full max-w-[95%] mx-auto p-6 rounded-lg shadow-md ${
+          className={`w-full max-w-[96vw] mx-auto border border-gray-200 rounded-xl shadow-lg p-6 bg-white overflow-hidden ${
             isAdmin ? "bg-dashboard-background" : "bg-gray-50"
           }`}
         >
-          {/* Detalles del proyecto */}
-          <div className="mb-8">
+          <div className="mb-5">
             <h3 className="text-lg font-semibold text-dashboard-text mb-4 text-center">
+              <h2
+                className={`text-center text-2xl md:text-3xl font-bold mb-8 ${
+                  isAdmin ? "text-red-600 mb-6" : "text-blue-800"
+                }`}
+              >
+                Detalles del Proyecto
+              </h2>
               <div className="text-dashboard-text flex items-center justify-center">
                 <span>
                   <strong>ID:</strong> {project.id}
@@ -919,7 +895,6 @@ const ProjectDetail = () => {
             </div>
           </div>
 
-          {/* Buscador y botón de guardar */}
           <div className="flex justify-center">
             {hasUnsavedChanges && (
               <button
@@ -931,7 +906,6 @@ const ProjectDetail = () => {
             )}
           </div>
 
-          {/* Modal de éxito animado */}
           <AnimatePresence>
             {showSuccessModal && (
               <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -950,7 +924,6 @@ const ProjectDetail = () => {
             )}
           </AnimatePresence>
 
-          {/* Tabla de piezas */}
           <h3 className="text-lg font-semibold text-dashboard-text mb-4 text-center">
             Piezas
           </h3>
@@ -965,7 +938,7 @@ const ProjectDetail = () => {
           </div>
 
           {project.parts?.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[calc(100vh-34rem)] overflow-y-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr
@@ -976,7 +949,7 @@ const ProjectDetail = () => {
                     }
                   >
                     <th
-                      className="p-3 text-center cursor-pointer w-20"
+                      className="p-3 text-center cursor-pointer w-20 sticky top-0 z-10 bg-inherit"
                       onClick={() => requestSort("id")}
                     >
                       <div className="flex items-center justify-center space-x-1">
@@ -989,11 +962,17 @@ const ProjectDetail = () => {
                           ))}
                       </div>
                     </th>
-                    <th className="p-3 text-center">Pieza</th>
-                    <th className="p-3 text-center">Imagen Pieza</th>
-                    <th className="p-3 text-center">Material</th>
+                    <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
+                      Pieza
+                    </th>
+                    <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
+                      Imagen Pieza
+                    </th>
+                    <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
+                      Material
+                    </th>
                     <th
-                      className="p-3 text-center cursor-pointer"
+                      className="p-3 text-center cursor-pointer sticky top-0 z-10 bg-inherit"
                       onClick={() => requestSort("totalweightKg")}
                     >
                       <div className="flex items-center justify-center space-x-1">
@@ -1007,7 +986,7 @@ const ProjectDetail = () => {
                       </div>
                     </th>
                     <th
-                      className="p-3 text-center cursor-pointer"
+                      className="p-3 text-center cursor-pointer sticky top-0 z-10 bg-inherit"
                       onClick={() => requestSort("sheetThicknessMm")}
                     >
                       <div className="flex items-center justify-center space-x-1">
@@ -1021,7 +1000,7 @@ const ProjectDetail = () => {
                       </div>
                     </th>
                     <th
-                      className="p-3 text-center cursor-pointer"
+                      className="p-3 text-center cursor-pointer sticky top-0 z-10 bg-inherit"
                       onClick={() => requestSort("lengthPiecesMm")}
                     >
                       <div className="flex items-center justify-center space-x-1">
@@ -1035,7 +1014,7 @@ const ProjectDetail = () => {
                       </div>
                     </th>
                     <th
-                      className="p-3 text-center cursor-pointer"
+                      className="p-3 text-center cursor-pointer sticky top-0 z-10 bg-inherit"
                       onClick={() => requestSort("heightMm")}
                     >
                       <div className="flex items-center justify-center space-x-1">
@@ -1049,7 +1028,7 @@ const ProjectDetail = () => {
                       </div>
                     </th>
                     <th
-                      className="p-3 text-center cursor-pointer"
+                      className="p-3 text-center cursor-pointer sticky top-0 z-10 bg-inherit"
                       onClick={() => requestSort("widthMm")}
                     >
                       <div className="flex items-center justify-center space-x-1">
@@ -1062,14 +1041,20 @@ const ProjectDetail = () => {
                           ))}
                       </div>
                     </th>
-                    <th className="p-3 text-center">Recepción</th>
-                    <th className="p-3 text-center">
+                    <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
+                      Recepción
+                    </th>
+                    <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
                       Fecha y Hora de Recepción
                     </th>
-                    <th className="p-3 text-center">Estado de Pieza</th>
-                    <th className="p-3 text-center">Control de Calidad</th>
+                    <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
+                      Estado de Pieza
+                    </th>
+                    <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
+                      Control de Calidad
+                    </th>
                     {isAdmin && (
-                      <th className="p-3 text-center">
+                      <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
                         <div className="flex flex-col items-center">
                           <span>QR</span>
                           <button
@@ -1081,8 +1066,14 @@ const ProjectDetail = () => {
                         </div>
                       </th>
                     )}
-                    <th className="p-3 text-center">Observaciones</th>
-                    {isAdmin && <th className="p-3 text-center">Acciones</th>}
+                    <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
+                      Observaciones
+                    </th>
+                    {isAdmin && (
+                      <th className="p-3 text-center sticky top-0 z-10 bg-inherit">
+                        Acciones
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -1514,7 +1505,6 @@ const ProjectDetail = () => {
             </div>
           )}
 
-          {/* Modal de selección de QR para imprimir (solo para ADMIN) */}
           {isAdmin && showPrintModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
               <div className="bg-white p-6 rounded-lg shadow-lg max-w-lg w-full">
@@ -1573,7 +1563,6 @@ const ProjectDetail = () => {
             </div>
           )}
 
-          {/* Componente oculto para la impresión */}
           <div style={{ display: "none" }}>
             <div ref={printRef}>
               <QRPrintTemplate
@@ -1588,7 +1577,6 @@ const ProjectDetail = () => {
             </div>
           </div>
 
-          {/* Modal de confirmación para eliminar (solo para ADMIN) */}
           {isAdmin && showDeleteModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
               <div className="bg-white p-6 rounded-lg shadow-lg">

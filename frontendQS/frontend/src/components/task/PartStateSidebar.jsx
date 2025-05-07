@@ -48,9 +48,9 @@ const PartStateSidebar = ({ onStateSelect, selectedState }) => {
   return (
     <>
       {/* Vista para pantallas >= 768px */}
-      <div className="hidden md:block py-6 px-4 h-full bg-white">
+      <div className="hidden md:block py-2 px-2 h-full bg-white shadow-lg">
         {error && (
-          <div className="bg-red-50 text-red-600 p-2 rounded mb-4 text-center text-sm">
+          <div className="bg-red-50 text-red-600 p-2 rounded mb-2 text-center text-sm">
             {error}
           </div>
         )}
@@ -58,7 +58,7 @@ const PartStateSidebar = ({ onStateSelect, selectedState }) => {
           {partsByState.map((stateGroup, index) => (
             <div
               key={index}
-              className={`flex items-center justify-between py-3 px-4 min-[1040px]:px-6 rounded-lg cursor-pointer border border-gray-200 shadow-sm hover:shadow-md transition-shadow ${
+              className={`flex items-center justify-between py-2 px-4 min-[1040px]:px-6 rounded-lg cursor-pointer border border-gray-200 shadow-sm hover:shadow-md transition-shadow ${
                 selectedState === stateGroup.state
                   ? "bg-blue-50 border-blue-400"
                   : "bg-white"
@@ -84,13 +84,13 @@ const PartStateSidebar = ({ onStateSelect, selectedState }) => {
       </div>
 
       {/* Vista para pantallas < 768px */}
-      <div className="md:hidden py-4 px-2">
+      <div className="md:hidden py-1 px-2">
         {error && (
-          <div className="bg-red-50 text-red-600 p-2 rounded mb-4 text-center text-sm">
+          <div className="bg-red-50 text-red-600 p-2 rounded mb-2 text-center text-sm">
             {error}
           </div>
         )}
-        <div className="flex flex-wrap justify-center gap-4 bg-white py-2">
+        <div className="flex flex-wrap justify-center gap-4 bg-white py-1">
           {partsByState.map((stateGroup, index) => (
             <div
               key={index}
