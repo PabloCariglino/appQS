@@ -301,7 +301,7 @@ const PackagedPartScanner = () => {
       <div className="flex-grow mt-10 px-4 sm:px-6 md:px-8 lg:px-10 py-8">
         <div className="max-w-7xl mx-auto w-full">
           <h2
-            className={`text-center text-2xl md:text-3xl font-bold mb-8 ${
+            className={`text-center text-2xl md:text-3xl font-bold mb-8 mt-5 ${
               isAdmin ? "text-red-600" : "text-blue-800"
             }`}
           >

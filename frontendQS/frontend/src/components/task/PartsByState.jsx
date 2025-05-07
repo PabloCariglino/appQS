@@ -1,5 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useRef, useState } from "react";
+import useAuthContext from "../../auth/UseAuthContext";
 import PartStateGroupService from "../../services/PartStateGroupService";
 import PartTrackingService from "../../services/PartTrackingService";
 
@@ -15,6 +16,7 @@ const PartsByState = ({ state }) => {
   const [hasMore, setHasMore] = useState(false);
   const observerRef = useRef(null);
   const loadMoreRef = useRef(null);
+  const { role } = useAuthContext();
 
   useEffect(() => {
     const fetchParts = async () => {
@@ -166,11 +168,17 @@ const PartsByState = ({ state }) => {
     setPartToTake(null);
   };
 
+  const isAdmin = role === "ADMIN";
+
   return (
     <div className="max-w-full h-[calc(100vh-7rem)]">
-      <h1 className="text-xl font-semibold text-blue-800 text-center">
+      <h2
+        className={`text-center text-2xl md:text-3xl font-bold mb-4 mt-4 ${
+          isAdmin ? "text-red-600" : "text-blue-800"
+        }`}
+      >
         Piezas en estado {(state || "").replace(/_/g, " ")}
-      </h1>
+      </h2>
 
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
@@ -226,7 +234,7 @@ const PartsByState = ({ state }) => {
           {error}
         </div>
       ) : parts.length > 0 ? (
-        <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 max-h-[calc(100vh-15rem)] overflow-y-auto mt-2 shadow-lg">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 max-h-[calc(100vh-15rem)] overflow-y-auto mt-2 shadow-lg">
           <ul className="space-y-2">
             {displayedParts.map((part) => (
               <li
@@ -242,19 +250,20 @@ const PartsByState = ({ state }) => {
                     <span className="font-medium">Pieza ID:</span> {part.partId}
                   </p>
                   <p className="text-gray-800 text-sm">
-                    <span className="font介质-medium">Nombre:</span>{" "}
-                    {part.partName}
+                    <span className="font-medium">Nombre:</span> {part.partName}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => handleTakePart(part.partId, part.isTaken)}
-                    disabled={part.isTaken}
-                    className={`px-3 py-1 rounded text-white text-sm ${
+                    disabled={part.isTaken || isAdmin}
+                    className={`px-3 py-1 rounded text-white text-sm transition-colors ${
                       part.isTaken
                         ? "bg-gray-400 cursor-not-allowed"
+                        : isAdmin
+                        ? "bg-red-600 cursor-not-allowed pointer-events-none"
                         : "bg-blue-800 hover:bg-blue-900"
-                    } transition-colors`}
+                    }`}
                   >
                     Tomar pieza
                   </button>

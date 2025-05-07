@@ -24,7 +24,7 @@ const PartStateDashboard = () => {
               <PartsByState state={selectedState} />
             ) : (
               <div className="flex items-center justify-center h-full">
-                <p className="text-gray-500 text-lg">
+                <p className="text-gray-500 text-lg pt-80">
                   Selecciona un estado para ver las piezas.
                 </p>
               </div>

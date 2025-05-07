@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
+import useAuthContext from "../../auth/UseAuthContext";
 import PartTrackingService from "../../services/PartTrackingService";
 
 const OperatorPerformance = () => {
   const [metrics, setMetrics] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const { role } = useAuthContext();
   useEffect(() => {
     const fetchMetrics = async () => {
       setLoading(true);
@@ -38,11 +39,17 @@ const OperatorPerformance = () => {
     }${minutes} minutos`;
   };
 
+  const isAdmin = role === "ADMIN";
+
   return (
     <div className="min-h-screen flex flex-col bg-white">
       <div className="flex-grow mt-16 px-4 sm:px-6 md:px-8 lg:px-10 py-8">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center text-gray-800">
-          Mi Rendimiento
+        <h1
+          className={`text-center text-2xl md:text-3xl font-bold mb-4 mt-5 ${
+            isAdmin ? "text-red-600" : "text-blue-800"
+          }`}
+        >
+          Rendimiento De Usuario
         </h1>
 
         {loading ? (
@@ -57,7 +64,7 @@ const OperatorPerformance = () => {
             {error}
           </div>
         ) : metrics ? (
-          <div className="space-y-6">
+          <div className="space-y-6 ">
             <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4 text-center">
               <h2 className="text-xl font-semibold mb-4 text-gray-700">
                 Cantidad de Piezas Completadas
@@ -77,16 +84,16 @@ const OperatorPerformance = () => {
             </div>
 
             <div className="overflow-x-auto">
-              <h2 className="text-xl font-semibold mb-4 text-gray-700">
+              <h2 className="text-center font-semibold mb-4 mt-5 text-gray-900">
                 Promedio de Tiempo por Categoría
               </h2>
-              <table className="min-w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+              <table className="w-full max-w-[50vw] mx-auto bg-white border border-gray-200 rounded-lg shadow-lg">
                 <thead>
-                  <tr className="bg-gray-100">
-                    <th className="px-4 py-2 text-left text-gray-700 font-semibold">
+                  <tr className="bg-gray-600 sticky top-0 z-10">
+                    <th className="px-4 py-2 text-left  text-white font-semibold">
                       Categoría (Part State)
                     </th>
-                    <th className="px-4 py-2 text-left text-gray-700 font-semibold">
+                    <th className="px-4 py-2 text-left text-white font-semibold">
                       Promedio de Tiempo
                     </th>
                   </tr>

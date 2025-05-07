@@ -68,8 +68,8 @@ const UserTasks = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <div className="flex-grow mt-16 px-4 sm:px-6 md:px-8 lg:px-16 py-8">
+    <div className="min-h-screen flex flex-col bg-gray-50 mt-12">
+      <div className="flex-grow mt-16 px-6 sm:px-6 md:px-8 lg:px-16 py-8">
         {loading ? (
           <p className="text-gray-500 text-center text-base">
             Cargando piezas...
@@ -85,7 +85,7 @@ const UserTasks = () => {
           <div className="md:grid md:grid-cols-2 md:gap-6">
             {/* Piezas en Proceso (Izquierda) */}
             <div className="mb-8 md:mb-0">
-              <h2 className="text-xl font-semibold mb-4 text-gray-700 text-center flex items-center justify-center gap-2">
+              <h2 className="text-xl font-semibold  mb-4 text-gray-700 text-center flex items-center justify-center gap-2">
                 <FaTasks className="text-gray-700" />
                 Piezas en Proceso
               </h2>
@@ -93,7 +93,7 @@ const UserTasks = () => {
                 currentTasks.map((task) => (
                   <div
                     key={task.trackingId}
-                    className="bg-white rounded-xl shadow-md border border-gray-200 p-5 mb-4 max-w-md mx-auto hover:bg-gray-50 hover:shadow-lg transition-all"
+                    className="bg-white mt-48 rounded-xl shadow-lg border border-gray-200 p-5 mb-4 max-w-lg mx-auto hover:bg-gray-50 hover:shadow-lg transition-all"
                   >
                     <p className="text-gray-800 text-base leading-6">
                       <span className="font-medium">Proyecto ID:</span>{" "}
@@ -120,7 +120,7 @@ const UserTasks = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500 text-base text-center">
+                <p className="text-gray-500 text-base text-center mt-60">
                   No tienes piezas en proceso.
                 </p>
               )}
@@ -167,7 +167,7 @@ const UserTasks = () => {
 
         {/* Modal de Confirmación */}
         {showConfirmModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-60">
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-gray-900 bg-opacity-50">
             <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full transform transition-all scale-100">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 text-center">
                 Confirmar Acción

@@ -48,7 +48,7 @@ const PartStateSidebar = ({ onStateSelect, selectedState }) => {
   return (
     <>
       {/* Vista para pantallas >= 768px */}
-      <div className="hidden md:block py-2 px-2 h-full bg-white shadow-lg">
+      <div className="hidden md:block py-40 px-2 h-full bg-white shadow-lg">
         {error && (
           <div className="bg-red-50 text-red-600 p-2 rounded mb-2 text-center text-sm">
             {error}
